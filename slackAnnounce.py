@@ -55,6 +55,8 @@ def parse_arguments():
 
 class DefaultsBundle(object):
     def __init__(self):
+        """The first 4 attributes may contain private information, so keep them
+        in a separate file called secrets.py which is imported at the top."""
         self.webhook_url = secrets.SLACK_WEBHOOK_URL
         self.user = secrets.DEFAULT_SLACK_USER
         self.room = secrets.DEFAULT_SLACK_ROOM
