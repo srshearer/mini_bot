@@ -75,7 +75,7 @@ def text_color(requested_color):
         'danger': 'danger',
         'red': 'danger',
         'purple': '#764FA5',
-        }
+    }
     if requested_color in text_color_dict:
         return_color = text_color_dict[requested_color]
     else:
@@ -88,8 +88,8 @@ def text_color(requested_color):
 
 
 class SimpleSlackPost(object):
-    def __init__(self, user, room, title, message, color, debug_state,
-                 dryrun_state, webhook_url):
+    def __init__(self, user, room, title, message, color,
+                 debug_state, dryrun_state, webhook_url):
         """Instantiates slack message object.
         Requirements:
             user(str)
@@ -115,10 +115,7 @@ class SimpleSlackPost(object):
         self.message = str(message)
         self.color = str(color)
 
-    @property
-    def json_payload(self):
-        """Builds formatted json payload for Slack based on object arguments."""
-        self._json_payload = {
+        self.json_payload = {
             "channel": self.room,
             "username": self.user,
             "attachments": [
@@ -130,7 +127,6 @@ class SimpleSlackPost(object):
                 }
             ]
         }
-        return self._json_payload
 
 
 def get_debug_state(args, defaults):
@@ -207,9 +203,9 @@ def set_message(args, defaults):
         downtime_number = arg_message_list[1]
         downtime_units = arg_message_list[2]
         title = 'Announcement: Server going down'
-        message = 'The server is going down for maintenance.\n' \
-                      'Exepected downtime is about {} {}.'.format(
-            downtime_number, downtime_units)
+        message = 'The server is going down for maintenance.\nExepected ' \
+                  'downtime is about {} {}.'.format(downtime_number,
+                                                    downtime_units)
         color = text_color('warn')
     else:
         title = 'Server Announcement: '
@@ -221,20 +217,21 @@ def set_message(args, defaults):
     if args.title:
         title = str(args.title)
     if debug_state:
-        print 'Color: {} \nTitle: {} \nMessage: {}'.format(color, title, message)
+        print 'Color: {} \nTitle: {} \nMessage: {}'.format(color, title,
+                                                           message)
 
     # Build slack post object
-    slackMessage_obj = SimpleSlackPost(user, room, title, message, color, debug_state,
-                                       dryrun_state, webhook_url)
-    return slackMessage_obj
+    slack_message_obj = SimpleSlackPost(user, room, title, message, color,
+                                        debug_state, dryrun_state, webhook_url)
+    return slack_message_obj
 
 
-def post_message(object):
-    webhook_url = object.webhook_url
-    slack_data = object.json_payload
-    if object.debug:
+def post_message(message_contents_obj):
+    webhook_url = message_contents_obj.webhook_url
+    slack_data = message_contents_obj.json_payload
+    if message_contents_obj.debug:
         print '\n{}'.format(slack_data)
-    if not object.dryrun:
+    if not message_contents_obj.dryrun:
         response = requests.post(
             webhook_url, data=json.dumps(slack_data),
             headers={'Content-Type': 'application/json'}
@@ -251,8 +248,8 @@ def post_message(object):
 def main():
     defaults = DefaultsBundle()
     args = parse_arguments()
-    slackMessage = set_message(args, defaults)
-    post_message(slackMessage)
+    slack_message = set_message(args, defaults)
+    post_message(slack_message)
 
 
 if __name__ == '__main__':
