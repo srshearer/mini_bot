@@ -17,7 +17,7 @@ import json
 import requests
 import argparse
 import sys
-from pyBots import secrets
+from pyBots.slackBot import secrets
 
 
 def parse_arguments():
