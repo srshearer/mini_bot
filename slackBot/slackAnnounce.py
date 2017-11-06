@@ -10,11 +10,15 @@ To do:
     - improve documentation, usage, help, etc.
     - add new movie notification functionality
 """
+import os
+import sys
 import json
 import requests
 import argparse
-import sys
-from slackBot import secrets
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from slackBot import secrets as secrets
 
 
 def parse_arguments():
