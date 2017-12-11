@@ -12,6 +12,7 @@ To do:
 """
 import os
 import sys
+import argparse
 import json
 try:
     import requests
@@ -22,7 +23,6 @@ except ImportError:
         pip.main(['install', 'requests'])
         print '\nPlease try running the script again.\n'
         sys.exit(1)
-import argparse
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from slackBot import secrets
