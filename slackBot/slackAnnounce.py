@@ -18,11 +18,11 @@ try:
     import requests
 except ImportError:
     print 'Attempting to install requests module via pip...'
-    try:
-        import pip
-        pip.main(['install', 'requests'])
-        print '\nPlease try running the script again.\n'
-        sys.exit(1)
+    import pip
+    pip.main(['install', 'requests'])
+    print '\nPlease try running the script again.\n'
+    sys.exit(1)
+
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from slackBot import secrets
