@@ -14,17 +14,9 @@ import os
 import sys
 import argparse
 import json
-sys.path.insert(
-    0, os.path.join(os.path.dirname(__file__), '/usr/local/lib/python2.7/site-packages'))
-try:
-    import requests
-except ImportError  as e:
-    print '{}\n'.format(e)
-    print 'Attempting to install requests module via pip...'
-    import pip
-    pip.main(['install', 'requests'])
-    print '\nPlease try running the script again.\n'
-    sys.exit(1)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__),
+                                '/usr/local/lib/python2.7/site-packages'))
+import requests
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
