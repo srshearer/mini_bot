@@ -30,7 +30,7 @@ import requests
 from plexapi.myplex import MyPlexAccount
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pyBots.pyPlex import secrets
+from pyPlex import secrets
 from pyBots.slackBot import slackAnnounce
 
 
