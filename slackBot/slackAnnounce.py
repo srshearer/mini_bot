@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/local/bin/python -u
 # encoding: utf-8
 
 """
@@ -14,10 +14,11 @@ import os
 import sys
 import argparse
 import json
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '/usr/local/bin/python'))
 try:
     import requests
 except ImportError  as e:
-    print e + '\n'
+    print '{}\n'.format(e)
     print 'Attempting to install requests module via pip...'
     import pip
     pip.main(['install', 'requests'])
