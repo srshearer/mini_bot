@@ -230,8 +230,8 @@ def set_slack_message(args, defaults):
     except AttributeError:
         json_attachments = set_message_simple_message(args, defaults)
     if debug:
-        print 'User: {} \nRoom: {} \nWebhook: {} \n{}'.format(
-            user, room, webhook_url, str(json.dumps(json_attachments)))
+        print 'User: {} \nRoom: {} \n{}'.format(
+            user, room, str(json.dumps(json_attachments)))
 
     slack_message_obj = SlackPostJsonPayload(user, room, webhook_url,
                                              json_attachments, debug, dryrun)
