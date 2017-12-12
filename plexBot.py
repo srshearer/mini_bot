@@ -45,7 +45,7 @@ def parse_arguments():
                         required=False, action='store_true',
                         help='Enable dryrun mode. Message will not be sent.')
     parser.add_argument('-i', '--guid', dest='imdb_guid', metavar='<IMDb guid>',
-                        required=False, action='store',
+                        required=True, action='store',
                         help='Find movie by IMDb guid.')
     parser.add_argument('-u', '--user', dest='user', metavar='<username>',
                         required=False, action='store',
@@ -183,7 +183,7 @@ def format_quality(raw_quality):
 def search_plex(plex, imdb_guid):
     movies = plex.library.section('Movies')
     for video in movies.search(guid=imdb_guid):
-        print(video.title)
+        print str(video.title)
     return video
 
 def get_new_movie_notification_json(movie):
@@ -216,6 +216,8 @@ def main():
     defaults = DefaultsBundle()
     args = parse_arguments()
 
+    debug, dryrun = slackAnnounce.get_debug_state(args, defaults)
+
     ## TOKEN BASED AUTH
     # token = defaults.token
     # baseurl = defaults.plex_server_url
@@ -245,9 +247,11 @@ def main():
     new_movie = Movie(imdb_guid, movie_info_plex, movie_info_omdb, defaults)
     json_attachments = new_movie.new_movie_json_attachment
 
-    slack_variables = SlackArgsBundle(json_attachments, debug=True, dryrun=False)
+    slack_variables = SlackArgsBundle(json_attachments, debug=debug, dryrun=dryrun)
     slack_defaults = slackAnnounce.DefaultsBundle()
     message_obj = slackAnnounce.set_slack_message(slack_variables, slack_defaults)
+
+    sys.exit(0)
     slackAnnounce.post_message(message_obj)
 
 
@@ -269,68 +273,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-    # guid = 'com.plexapp.agents.imdb://tt3606752?lang=en'
-
-    # {"Title": "Cars 3",
-    #  "Year": "2017",
-    #  "Rated": "G",
-    #  "Released": "16 Jun 2017",
-    #  "Runtime": "102 min",
-    #  "Genre": "Animation, Adventure, Comedy",
-    #  "Director": "Brian Fee",
-    #  "Writer": "Brian Fee (original story by), Ben Queen (original story by), Eyal Podell (original story by), Jonathon E. Stewart (original story by), Kiel Murray (screenplay by), Bob Peterson (screenplay by), Mike Rich (screenplay by), Scott Morse (additional story material)",
-    #  "Actors": "Owen Wilson, Cristela Alonzo, Chris Cooper, Nathan Fillion",
-    #  "Plot": "Lightning McQueen sets out to prove to a new generation of racers that he's still the best race car in the world.",
-    #  "Language": "English", "Country": "USA", "Awards": "2 nominations.",
-    #  "Poster": "https://images-na.ssl-images-amazon.com/images/M/MV5BMTc0NzU2OTYyN15BMl5BanBnXkFtZTgwMTkwOTg2MTI@._V1_SX300.jpg",
-    #  "Ratings": [{"Source": "Internet Movie Database", "Value": "6.9/10"},
-    #              {"Source": "Rotten Tomatoes", "Value": "67%"},
-    #              {"Source": "Metacritic", "Value": "59/100"}],
-    #  "Metascore": "59", "imdbRating": "6.9", "imdbVotes": "29,868",
-    #  "imdbID": "tt3606752",
-    #  "Type": "movie",
-    #  "DVD": "07 Nov 2017",
-    #  "BoxOffice": "$152,603,003",
-    #  "Production": "Walt Disney Pictures",
-    #  "Website": "http://movies.disney.com/cars-3",
-    #  "Response": "True"}
-
-    # class Movie(object):
-    #     def __init__(self, movie):
-    #         self.title = movie.title
-    #         self.year = '1985'
-    #         self.color = slackAnnounce.text_color('purple')
-    #         self.imdb_guid = movie.imdb_guid
-    #         self.duration = '120 min'
-    #         self.plot = 'plot'
-    #         self.director = 'director'
-    #         self.rating = 'R'
-    #         self.poster_link = 'https://images-na.ssl-images-amazon.com/images/M/MV5BMTc0NzU2OTYyN15BMl5BanBnXkFtZTgwMTkwOTg2MTI@._V1_SX300.jpg'
-    #
-    #     def json_attachment(self):
-    #         json_attachment = new_movie_notification(self)
-    #         return json_attachment
-
-# def print_info_for_results(movie_list):
-#     for result in movie_list:
-#         try:
-#             title = str(result.title)
-#             year = str(result.year)
-#             rating = str(result.contentRating)
-#             raw_duration = result.duration
-#             duration = conv_milisec_to_min(raw_duration)
-#             # add_date = str(result.addedAt)
-#             # summary = str(result.summary)
-#             media_items = result.media
-#             raw_imdb_guid = result.guid
-#             imdb_guid = get_clean_imdb_guid(raw_imdb_guid)
-#             poster = get_poster(imdb_guid)
-#             for elem in media_items:
-#                 raw_quality = str(elem.videoResolution)
-#                 quality = format_quality(raw_quality)
-#
-#             print '{} ({}) {} [{}, {}] {} - {}'.format(title, year, imdb, rating, quality, duration, poster)
-#
-#         except:
-#             pass
