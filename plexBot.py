@@ -251,7 +251,6 @@ def main():
     slack_defaults = slackAnnounce.DefaultsBundle()
     message_obj = slackAnnounce.set_slack_message(slack_variables, slack_defaults)
 
-    sys.exit(0)
     slackAnnounce.post_message(message_obj)
 
 
