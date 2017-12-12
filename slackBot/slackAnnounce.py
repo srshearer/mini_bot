@@ -1,4 +1,4 @@
-#!/usr/local/bin/python -u
+#!/usr/bin/python -u
 # encoding: utf-8
 
 """
@@ -20,7 +20,7 @@ import requests
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from slackBot import secrets
+import slack_config
 
 
 def parse_arguments():
@@ -62,11 +62,11 @@ def parse_arguments():
 class DefaultsBundle(object):
     def __init__(self):
         """The first 4 attributes may contain private information, so keep them
-        in a separate file called secrets.py which is imported at the top."""
-        self.webhook_url = secrets.SLACK_WEBHOOK_URL
-        self.user = secrets.DEFAULT_SLACK_USER
-        self.room = secrets.DEFAULT_SLACK_ROOM
-        self.debugroom = secrets.DEBUG_SLACK_ROOM
+        in a separate file called slack_config.py which is imported at the top."""
+        self.webhook_url = slack_config.SLACK_WEBHOOK_URL
+        self.user = slack_config.DEFAULT_SLACK_USER
+        self.room = slack_config.DEFAULT_SLACK_ROOM
+        self.debugroom = slack_config.DEBUG_SLACK_ROOM
         self.color = text_color('info')
         self.debug = False
         self.dryrun = False

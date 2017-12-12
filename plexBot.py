@@ -30,8 +30,8 @@ import requests
 from plexapi.myplex import MyPlexAccount
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pyPlex import secrets
-from pyBots.slackBot import slackAnnounce
+from plexBot import plex_config
+from slackBot import slackAnnounce
 
 
 def parse_arguments():
@@ -59,12 +59,12 @@ def parse_arguments():
 
 class DefaultsBundle(object):
     def __init__(self):
-        self.plex_server_url = secrets.PLEX_SERVER_URL
-        self.plex_server_name = secrets.PLEX_SERVER_NAME
-        self.user = secrets.PLEX_USERNAME
-        self.pw = secrets.PLEX_PASSWORD
-        self.token = secrets.PLEX_TOKEN
-        self.omdb_key = secrets.OMDB_API_KEY
+        self.plex_server_url = plex_config.PLEX_SERVER_URL
+        self.plex_server_name = plex_config.PLEX_SERVER_NAME
+        self.user = plex_config.PLEX_USERNAME
+        self.pw = plex_config.PLEX_PASSWORD
+        self.token = plex_config.PLEX_TOKEN
+        self.omdb_key = plex_config.OMDB_API_KEY
         self.maxresults = 3
         self.debug = False
         self.dryrun = False
