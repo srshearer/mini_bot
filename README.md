@@ -47,7 +47,7 @@ Before this will work, you will need to do the following…
 *Required arguments:*
 `  -i, --guid '<IMDb guid>'` _The IMDb guid is required to look up the movie in your Plex library and to look up additional info from OMDb._  
 
-*Optional arguments:*
+*Optional arguments:*  
 `  -h, --help`  _Show help message and exit_  
 `  -d, --debug`  _Enable debug mode. Send message to test channel and show json output in console._  
 `  --dry`  _Enable dryrun mode. Message will not be sent._  
