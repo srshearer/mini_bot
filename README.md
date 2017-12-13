@@ -43,6 +43,10 @@ Before this will work, you will need to do the following…
 - Your Plex username and password
 - Your OMDb api key _(Get this from http://www.omdbapi.com/apikey.aspx)_
 4. Verify that _.gitignore_ lists _*config.py_ as an ignored file and that plex_config.py will not be pushed to git. This should already be set up properly for you.
+5. Install PlexAPI in order to interact with your Plex server. _(https://pypi.python.org/pypi/PlexAPI)_
+
+*Recommended*
+I would recommend that you install and use PlexPy on your Plex Server. This will not only give you a great web interface and statistics for your server and content, but will also allow you to monitor your server for new content and launch plexBot.py. Alternatively, you could use PlexPy to entirely circumvent the entire need of this script and just send Slack notifications via their built-in tools.
 
 *Required arguments:*
 `  -i, --guid '<IMDb guid>'` _The IMDb guid is required to look up the movie in your Plex library and to look up additional info from OMDb._  
