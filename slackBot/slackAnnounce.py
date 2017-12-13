@@ -12,13 +12,15 @@ To do:
 """
 import os
 import sys
-import json
-import requests
 import argparse
+import json
+sys.path.insert(0, os.path.join(os.path.dirname(__file__),
+                                '/usr/local/lib/python2.7/site-packages'))
+import requests
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from slackBot import secrets
+import slack_config
 
 
 def parse_arguments():
@@ -35,6 +37,9 @@ def parse_arguments():
     parser.add_argument('--dry', dest='dryrun',
                         required=False, action='store_true',
                         help='Enable dryrun mode. Message will not be sent.')
+    parser.add_argument('--json', dest='json', metavar='<json attachment>',
+                        required=False, action='store',
+                        help='The message to send to the channel.')
     parser.add_argument('-m', '--message', dest='message', metavar='<message>',
                         required=True, action='store',
                         help='The message to send to the channel.')
@@ -57,14 +62,33 @@ def parse_arguments():
 class DefaultsBundle(object):
     def __init__(self):
         """The first 4 attributes may contain private information, so keep them
-        in a separate file called secrets.py which is imported at the top."""
-        self.webhook_url = secrets.SLACK_WEBHOOK_URL
-        self.user = secrets.DEFAULT_SLACK_USER
-        self.room = secrets.DEFAULT_SLACK_ROOM
-        self.debugroom = secrets.DEBUG_SLACK_ROOM
+        in a separate file called slack_config.py which is imported at the top."""
+        self.webhook_url = slack_config.SLACK_WEBHOOK_URL
+        self.user = slack_config.DEFAULT_SLACK_USER
+        self.room = slack_config.DEFAULT_SLACK_ROOM
+        self.debugroom = slack_config.DEBUG_SLACK_ROOM
         self.color = text_color('info')
         self.debug = False
         self.dryrun = False
+
+
+class SlackPostJsonPayload(object):
+    def __init__(self, user, room, webhook_url, json_attachments,
+                 debug, dryrun):
+        self.room = room
+        self.user = user
+        self.webhook_url = webhook_url
+        self.debug = debug
+        self.dryrun = dryrun
+        self.json_attachments = json_attachments
+
+        self.json_payload = {
+                "channel": self.room,
+                "username": self.user,
+                "attachments": [
+                    self.json_attachments
+                ]
+            }
 
 
 def text_color(requested_color):
@@ -90,102 +114,7 @@ def text_color(requested_color):
     return return_color
 
 
-class SimpleSlackPost(object):
-    def __init__(self, user, room, title, message, color,
-                 debug_state, dryrun_state, webhook_url):
-        """Instantiates slack message object.
-        Requirements:
-            user(str)
-            room(str)
-            title(str)
-            message(str)
-            color(str)
-            debug state(bool)
-            dryrun state(bool)
-            webhook url(str)
-        Returns:
-            obj.debug(bool) - debug mode state
-            obj.dryrun(bool) - dryrun mode state
-            obj.webhook_url(str) - webhook url
-            obj.json_payload(str) - formatted json
-        """
-        self.webhook_url = str(webhook_url)
-        self.debug = bool(debug_state)
-        self.dryrun = bool(dryrun_state)
-        self.user = str(user)
-        self.room = str(room)
-        self.title = str(title)
-        self.message = str(message)
-        self.color = str(color)
-
-        self.json_attachments = {
-                    "fallback": self.title,
-                    "color": self.color,
-                    "title": self.title,
-                    "text": self.message,
-                }
-
-        self.json_payload = {
-            "channel": self.room,
-            "username": self.user,
-            "attachments": [
-                self.json_attachments
-            ]
-        }
-
-
-def get_debug_state(args, defaults):
-    """Determines whether or not to enable debug mode based on user options
-    If dryrun mode is True, debug mode will also return True
-    Requires two objects: user arguments & defaults
-    Objects must contain obj.debug(bool) and obj.dryrun(bool)
-    Returns debug state (bool)
-    """
-    if args.dryrun:
-        debug_state = bool(True)
-    else:
-        debug_state = choose_arg_or_default(args, defaults, 'debug')
-    return bool(debug_state)
-
-
-def get_room(args, defaults):
-    """Chooses Slack channel from defaults or user options (if present)
-    Also ensures # is added to the front of the name if not already present
-    Requires two objects: user arguments & defaults
-    Objects should contain obj.room (str)
-    Returns Slack channel/room (str)
-    """
-    if args.room:
-        room = args.room
-    elif args.debug:
-        room = defaults.debugroom
-    else:
-        room = defaults.room
-
-    hash_check = list(room)[0]
-    if hash_check != '#':
-        room = '#' + room
-    return room
-
-
-def choose_arg_or_default(args, defaults, var):
-    """Chooses between user args or
-    Requires:
-        2 objects: user arguments & defaults
-        1 variable(str)
-    Objects should both potentially contain attributes with the same name
-    Returns the arg value if set, otherwise returns the default value
-    """
-    arg_value = getattr(args, var)
-    default_value = getattr(defaults, var)
-    if arg_value:
-        value = arg_value
-    else:
-        value = default_value
-    return value
-
-
-def set_message_title_color(args, defaults):
+def set_message_simple_message(args, defaults):
     """Sets message, title & color of message.
     Options: 'up', 'down <time amount> <time units>', or custom message.
     Requires 2 objects: args & defaults
@@ -212,35 +141,100 @@ def set_message_title_color(args, defaults):
             color = text_color(args.color)
         else:
             color = defaults.color
+
     if args.title:
         title = str(args.title)
 
-    return message, title, color
+    json_attachments = {
+        "fallback": title,
+        "color": color,
+        "title": title,
+        "text": message,
+    }
+    return json_attachments
 
 
-def build_slack_message_obj(args, defaults):
+def get_debug_state(args, defaults):
+    """Determines whether or not to enable debug mode based on user options
+    If dryrun mode is True, debug mode will also return True
+    Requires two objects: user arguments & defaults
+    Objects must contain obj.debug(bool) and obj.dryrun(bool)
+    Returns debug state (bool)
+    """
+    if args.dryrun:
+        debug_state = True
+        dryrun_state = True
+    else:
+        debug_state = choose_arg_or_default(args, defaults, 'debug')
+        dryrun_state = False
+    return bool(debug_state), bool(dryrun_state)
+
+
+def get_room(args, defaults):
+    """Chooses Slack channel from defaults or user options (if present)
+    Also ensures # is added to the front of the name if not already present
+    Requires two objects: user arguments & defaults
+    Objects should contain obj.room (str)
+    Returns Slack channel/room (str)
+    """
+    try:
+        arg_room = args.room
+    except AttributeError:
+        arg_room = False
+
+    if arg_room:
+        room = args.room
+    elif args.debug:
+        room = defaults.debugroom
+    else:
+        room = defaults.room
+
+    hash_check = list(room)[0]
+    if hash_check != '#':
+        room = '#' + room
+    return room
+
+
+def choose_arg_or_default(args, defaults, var):
+    """Chooses between user args or
+    Requires:
+        2 objects: user arguments & defaults
+        1 variable(str)
+    Objects should both potentially contain attributes with the same name
+    Returns the arg value if set, otherwise returns the default value
+    """
+    try:
+        arg_value = getattr(args, var)
+    except AttributeError:
+        arg_value = False
+    default_value = getattr(defaults, var)
+    if arg_value:
+        value = arg_value
+    else:
+        value = default_value
+    return value
+
+
+def set_slack_message(args, defaults):
     """Set up necessary variables to create the SlackMessage object by
     determining whether to use a default or a user-supplied argument.
     Requires a DefaultsBundle object and an args object from argparse
     Returns a SlackMessage(object)
     """
-    dryrun_state = bool(choose_arg_or_default(args, defaults, 'dryrun'))
-    debug_state = bool(get_debug_state(args, defaults))
-
+    debug, dryrun = get_debug_state(args, defaults)
     user = str(choose_arg_or_default(args, defaults, 'user'))
     room = str(get_room(args, defaults))
     webhook_url = str(choose_arg_or_default(args, defaults, 'webhook_url'))
-    if debug_state:
-        print 'User: {} \nRoom: {} \nWebhook: {}'.format(user, room,
-                                                         webhook_url)
+    try:
+        json_attachments = args.json_attachments
+    except AttributeError:
+        json_attachments = set_message_simple_message(args, defaults)
+    if debug:
+        print 'User: {} \nRoom: {}\n'.format(
+            user, room)
 
-    message, title, color = set_message_title_color(args, defaults)
-    if debug_state:
-        print 'Color: {} \nTitle: {} \nMessage: {}'.format(color, title,
-                                                           message)
-
-    slack_message_obj = SimpleSlackPost(user, room, title, message, color,
-                                        debug_state, dryrun_state, webhook_url)
+    slack_message_obj = SlackPostJsonPayload(user, room, webhook_url,
+                                             json_attachments, debug, dryrun)
     return slack_message_obj
 
 
@@ -248,8 +242,10 @@ def post_message(message_contents_obj):
     webhook_url = message_contents_obj.webhook_url
     slack_data = message_contents_obj.json_payload
     if message_contents_obj.debug:
-        print '\n{}'.format(slack_data)
-    if not message_contents_obj.dryrun:
+        print '{}'.format(slack_data)
+    if message_contents_obj.dryrun:
+        print '[Dry run. Not posting message.]'
+    else:
         response = requests.post(
             webhook_url, data=json.dumps(slack_data),
             headers={'Content-Type': 'application/json'}
@@ -266,7 +262,7 @@ def post_message(message_contents_obj):
 def main():
     defaults = DefaultsBundle()
     args = parse_arguments()
-    slack_message = build_slack_message_obj(args, defaults)
+    slack_message = set_slack_message(args, defaults)
     post_message(slack_message)
 
 
