@@ -45,9 +45,9 @@ Before this will work, you will need to do the following…
 4. Verify that _.gitignore_ lists _*config.py_ as an ignored file and that plex_config.py will not be pushed to git. This should already be set up properly for you.
 
 *Required arguments:*
-`  -i, --guid '<IMDb guid>'` _The IMDb guid is required to look up the movie in your Plex library and to look up additional info from OMDb._
+`  -i, --guid '<IMDb guid>'` _The IMDb guid is required to look up the movie in your Plex library and to look up additional info from OMDb._  
 
 *Optional arguments:*
-`  -h, --help`  _Show help message and exit_
-`  -d, --debug`  _Enable debug mode. Send message to test channel and show json output in console._
-`  --dry`  _Enable dryrun mode. Message will not be sent._
+`  -h, --help`  _Show help message and exit_  
+`  -d, --debug`  _Enable debug mode. Send message to test channel and show json output in console._  
+`  --dry`  _Enable dryrun mode. Message will not be sent._  
