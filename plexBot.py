@@ -53,9 +53,8 @@ class DefaultsBundle(object):
     def __init__(self):
         self.plex_server_url = plex_config.PLEX_SERVER_URL
         self.plex_server_name = plex_config.PLEX_SERVER_NAME
-        self.user = plex_config.PLEX_USERNAME
-        self.pw = plex_config.PLEX_PASSWORD
-        self.token = plex_config.PLEX_TOKEN
+        self.plex_user = plex_config.PLEX_USERNAME
+        self.plex_pw = plex_config.PLEX_PASSWORD
         self.omdb_key = plex_config.OMDB_API_KEY
         self.maxresults = 3
         self.debug = False
@@ -139,8 +138,8 @@ def get_movie_notification_json(movie):
     return json_attachments
 
 def get_server_instance(defaults):
-    user = defaults.user
-    password = defaults.pw
+    user = defaults.plex_user
+    password = defaults.plex_pw
     servername = defaults.plex_server_name
     account = MyPlexAccount(user, password)
     plex = account.resource(servername).connect()
