@@ -134,6 +134,12 @@ def get_movie_notification_json(movie):
     return json_attachments
 
 def get_server_instance(defaults):
+    """Uses PlexAPI to instansiate a Plex server connection.
+    Requires a Defaults object with…
+        - Plex username: Defaults.plex_user
+        - Plex password: Defaults.plex_pw
+        - Plex server name: Defaults.plex_server_name
+    """
     user = defaults.plex_user
     password = defaults.plex_pw
     servername = defaults.plex_server_name
@@ -142,6 +148,9 @@ def get_server_instance(defaults):
     return plex
 
 def search_plex(plex, imdb_guid):
+    """Uses PlexAPI to search for a movie via IMDb guid.
+    Returns a video object.
+    """
     movies = plex.library.section('Movies')
     found_movies = []
     for result in movies.search(guid=imdb_guid):
@@ -154,6 +163,10 @@ def search_plex(plex, imdb_guid):
     return video
 
 def querey_omdb(omdb_query_url):
+    """Generic function to query a url via requests.get.
+    Requires url to get.
+    Returns a json response.
+    """
     response = requests.get(omdb_query_url,
         headers={'Content-Type': 'application/json'}
     )
@@ -166,18 +179,30 @@ def querey_omdb(omdb_query_url):
         return response.text
 
 def get_omdb_info(imdb_guid, omdb_key):
+    """Queries OMDb for additional information about a movie given an IMDb guid.
+    Requires:
+        - IMDb guid to search for
+        - OMDb api key
+    Returns:
+        - json response
+    """
     omdb_querey_url = 'http://www.omdbapi.com/?i='
     omdb_querey_url = omdb_querey_url + imdb_guid + '&plot=short&apikey=' + omdb_key
     omdb_json_result = querey_omdb(omdb_querey_url)
     return omdb_json_result
 
 def conv_milisec_to_min(miliseconds):
+    """Takes int(miliseconds) and converts it to minutes, seconds.
+    """
     s, remainder = divmod(miliseconds, 1000)
     m, s = divmod(s, 60)
     min = '{} min'.format(m)
     return min
 
 def get_video_quality(movie):
+    """Takes a media object and loops through the media element to return the
+    video quality formatted as a string: 1080p, 720p, 480p, SD, etc…
+    """
     media_items = movie.media
     for elem in media_items:
         raw_quality = str(elem.videoResolution)
@@ -186,6 +211,9 @@ def get_video_quality(movie):
         return quality
 
 def format_quality(raw_quality):
+    """Takes video quality string and converts it to one of the following:
+    1080p, 720p, 480p, SD
+    """
     input_quality = str(raw_quality)
     known_qualities = ['1080', '720', '480']
     if input_quality in known_qualities:
@@ -195,6 +223,10 @@ def format_quality(raw_quality):
     return str(quality)
 
 def get_filesize(movie):
+    """Takes a media object and loops through the media element, then the media
+    part, to return the filesize in bytes. Returns a filesize string in human
+    readable format (i.e. 3.21 GB)
+    """
     media_items = movie.media
     raw_filesize = 0
     for media_elem in media_items:
@@ -204,6 +236,9 @@ def get_filesize(movie):
     return filesize
 
 def convert_file_size(size_bytes):
+   """Takes number of bytes as an integer.
+   Returns a filesize string in human readable format (i.e. 3.21 GB)
+   """
    if size_bytes == 0:
        return '0B'
    size_name = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB')
@@ -213,6 +248,8 @@ def convert_file_size(size_bytes):
    return '{} {}'.format(s, size_name[i])
 
 def get_clean_imdb_guid(guid):
+    """Takes an IMDb url and returns only the IMDb guid as a string.
+    """
     result = re.search('.+//(.+)\?.+', guid)
     if result:
         clean_guid = result.group(1)
