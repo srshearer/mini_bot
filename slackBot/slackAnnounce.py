@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 """
+Version: 2.0
 About:
     Post to Slack via webhooks
 

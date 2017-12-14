@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 """
+Version: 1.1
 Steven Shearer / srshearer@gmail.com
 
 About:
@@ -11,10 +12,8 @@ About:
 To do:
     - add/improve exception handling
     - improve documentation, usage, help, etc
-    - find link to movie trailer
     - get token based auth working
-    - add file size to notification
-    - verify movie search results were actually added recently
+    - verify movie search results were actually added to Plex recently
 """
 
 import os
@@ -149,6 +148,9 @@ def get_server_instance(defaults):
 
 def search_plex(plex, imdb_guid):
     """Uses PlexAPI to search for a movie via IMDb guid.
+    Requires:
+        - plex server instance object
+        - IMDb guid of a movie to search for
     Returns a video object.
     """
     movies = plex.library.section('Movies')
@@ -164,7 +166,7 @@ def search_plex(plex, imdb_guid):
 
 def querey_omdb(omdb_query_url):
     """Generic function to query a url via requests.get.
-    Requires url to get.
+    Requires url to get query
     Returns a json response.
     """
     response = requests.get(omdb_query_url,
@@ -192,7 +194,8 @@ def get_omdb_info(imdb_guid, omdb_key):
     return omdb_json_result
 
 def conv_milisec_to_min(miliseconds):
-    """Takes int(miliseconds) and converts it to minutes, seconds.
+    """Requires int(miliseconds) and converts it to minutes.
+    Returns: string(duration) (i.e. 117 min)
     """
     s, remainder = divmod(miliseconds, 1000)
     m, s = divmod(s, 60)
@@ -202,6 +205,9 @@ def conv_milisec_to_min(miliseconds):
 def get_video_quality(movie):
     """Takes a media object and loops through the media element to return the
     video quality formatted as a string: 1080p, 720p, 480p, SD, etc…
+    Requires:
+        - PlexAPI video object
+    Returns: str(movie quality)
     """
     media_items = movie.media
     for elem in media_items:
@@ -224,8 +230,11 @@ def format_quality(raw_quality):
 
 def get_filesize(movie):
     """Takes a media object and loops through the media element, then the media
-    part, to return the filesize in bytes. Returns a filesize string in human
-    readable format (i.e. 3.21 GB)
+    part, to return the filesize in bytes.
+    Requires:
+        - PlexAPI video object
+    Returns:
+        - str(filesize) in human readable format (i.e. 3.21 GB)
     """
     media_items = movie.media
     raw_filesize = 0
@@ -236,8 +245,11 @@ def get_filesize(movie):
     return filesize
 
 def convert_file_size(size_bytes):
-   """Takes number of bytes as an integer.
-   Returns a filesize string in human readable format (i.e. 3.21 GB)
+   """Converts file size in bytes as to human readable format.
+   Requires:
+        - int(bytes)
+   Returns:
+        - string (i.e. 3.21 GB)
    """
    if size_bytes == 0:
        return '0B'
@@ -249,6 +261,10 @@ def convert_file_size(size_bytes):
 
 def get_clean_imdb_guid(guid):
     """Takes an IMDb url and returns only the IMDb guid as a string.
+    Requires:
+        - str(IMDb url)
+    Returns:
+        - str(IMDb guid)
     """
     result = re.search('.+//(.+)\?.+', guid)
     if result:
