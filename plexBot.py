@@ -19,6 +19,7 @@ To do:
 
 import os
 import sys
+import re
 import math
 import json
 import argparse
@@ -70,8 +71,8 @@ class SlackArgsBundle(object):
 
 
 class Movie(object):
-    def __init__(self, imdb_guid, movie_info_plex, defaults):
-        self.imdb_guid = imdb_guid
+    def __init__(self, movie_info_plex, defaults):
+        self.imdb_guid = get_clean_imdb_guid(movie_info_plex.guid)
         self.color = defaults.color
 
         self.title = str(movie_info_plex.title)
@@ -79,10 +80,11 @@ class Movie(object):
         self.rating = str(movie_info_plex.contentRating)
         self._raw_duration = movie_info_plex.duration
         self.duration = conv_milisec_to_min(self._raw_duration)
-        self.quality = get_duration(movie_info_plex)
+        self.quality = get_video_quality(movie_info_plex)
+        self.filesize = get_filesize(movie_info_plex)
         self._media_items = movie_info_plex.media
 
-        self._omdb_json = self._get_omdb_info(imdb_guid, defaults.omdb_key)
+        self._omdb_json = self._get_omdb_info(self.imdb_guid, defaults.omdb_key)
         self.plot = self._omdb_json['Plot']
         self.poster_link = self._omdb_json['Poster']
         self.rating = self._omdb_json['Rated']
@@ -97,13 +99,6 @@ class Movie(object):
         _omdb_info_data = json.loads(_omdb_info_json)
         print _omdb_info_data
         return _omdb_info_data
-
-    @property
-    def _raw_quality(self):
-        for elem in self._media_items:
-            raw_quality = str(elem.videoResolution)
-            self.quality = format_quality(raw_quality)
-        return self.quality
 
     @property
     def json_attachment(self):
@@ -123,6 +118,7 @@ def get_movie_notification_json(movie):
     director = movie.director
     rating = movie.rating
     poster_link = movie.poster_link
+    filesize = movie.filesize
 
     json_attachments = {
         "fallback": fallback,
@@ -131,8 +127,8 @@ def get_movie_notification_json(movie):
         "title": '{} {}'.format(movie_title_year, quality),
         "title_link": 'http://www.imdb.com/title/' + imdb_guid,
         "text": duration,
-        "footer": '{} \n\nDirected by: {} \nRated [{}]\n'.format(
-            plot, director, rating),
+        "footer": '{} \n\nDirected by: {} \nRated [{}]\nSize: {}\nPoster: '.format(
+            plot, director, rating, filesize),
         "image_url": poster_link,
     }
     return json_attachments
@@ -175,28 +171,19 @@ def get_omdb_info(imdb_guid, omdb_key):
     omdb_json_result = querey_omdb(omdb_querey_url)
     return omdb_json_result
 
-def get_duration(movie):
-    media_items = movie.media
-    for elem in media_items:
-        raw_quality = str(elem.videoResolution)
-        quality = format_quality(raw_quality)
-    if quality:
-        return quality
-
 def conv_milisec_to_min(miliseconds):
     s, remainder = divmod(miliseconds, 1000)
     m, s = divmod(s, 60)
     min = '{} min'.format(m)
     return min
 
-def convert_file_size(size_bytes):
-   if size_bytes == 0:
-       return '0B'
-   size_name = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB')
-   i = int(math.floor(math.log(size_bytes, 1024)))
-   p = math.pow(1024, i)
-   s = round(size_bytes / p, 2)
-   return '{} {}'.format(s, size_name[i])
+def get_video_quality(movie):
+    media_items = movie.media
+    for elem in media_items:
+        raw_quality = str(elem.videoResolution)
+        quality = format_quality(raw_quality)
+    if quality:
+        return quality
 
 def format_quality(raw_quality):
     input_quality = str(raw_quality)
@@ -207,6 +194,33 @@ def format_quality(raw_quality):
         quality = input_quality.upper()
     return str(quality)
 
+def get_filesize(movie):
+    media_items = movie.media
+    raw_filesize = 0
+    for media_elem in media_items:
+        for media_part in media_elem.parts:
+            raw_filesize += media_part.size
+    filesize = convert_file_size(raw_filesize)
+    return filesize
+
+def convert_file_size(size_bytes):
+   if size_bytes == 0:
+       return '0B'
+   size_name = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB')
+   i = int(math.floor(math.log(size_bytes, 1024)))
+   p = math.pow(1024, i)
+   s = round(size_bytes / p, 2)
+   return '{} {}'.format(s, size_name[i])
+
+def get_clean_imdb_guid(guid):
+    result = re.search('.+//(.+)\?.+', guid)
+    if result:
+        clean_guid = result.group(1)
+        return clean_guid
+    else:
+        print 'ERROR - Could not determine IMDb guid from ' + guid
+        sys.exit(1)
+
 def main():
     defaults = DefaultsBundle()
     args = parse_arguments()
@@ -215,7 +229,7 @@ def main():
 
     plex = get_server_instance(defaults)
     movie_info_plex = search_plex(plex, imdb_guid)
-    new_movie = Movie(imdb_guid, movie_info_plex, defaults)
+    new_movie = Movie(movie_info_plex, defaults)
 
     slack_args = SlackArgsBundle(new_movie.json_attachment,
                                  debug=debug, dryrun=dryrun)
