@@ -6,14 +6,9 @@ Version: 2.0
 Steven Shearer / srshearer@gmail.com
 
 About:
-    For interacting with a Plex server to extract information out to build a
-    json message to be sent to Slack via slackAnnounce.
-
-To do:
-    - add/improve exception handling
-    - improve documentation, usage, help, etc
-    - get token based auth working
-    - verify movie search results were actually added to Plex recently
+    Utilizes plexUtils to search for movies in Plex and OMDb, extract
+    information about the movie, and format it into json to send as
+    a rich Slack message/
 """
 
 import sys
@@ -52,9 +47,9 @@ class MovieNotification(object):
         self.debug = debug
         self.imdb_guid = None
         self.color = 'purple'
-        self._plex_helper = PlexSearch(debug)
+        self._plex_helper = PlexSearch(debug=debug)
         self._plex_result = None
-        self._omdb_helper = OmdbSearch(debug)
+        self._omdb_helper = OmdbSearch(debug=debug)
         self._omdb_result = None
 
     def search(self, imdb_guid):
@@ -81,12 +76,12 @@ class MovieNotification(object):
         director = self._omdb_result['Director']
         duration = self._omdb_result['Runtime']
 
-        pretext = 'New Movie Available: '
+        pretext = 'New Movie Available:'
         movie_title_year = '{} ({})'.format(
             self._plex_result.title, self._plex_result.year)
         title = '{} {}'.format(movie_title_year, quality)
-        title_link ='http://www.imdb.com/title/{}'.format(self.imdb_guid)
-        fallback = '{} {}'.format(pretext, movie_title_year, quality)
+        fallback = '{} {} {}'.format(pretext, movie_title_year, quality)
+        title_link = 'http://www.imdb.com/title/{}'.format(self.imdb_guid)
 
         json_attachments = {
             "fallback": fallback,
@@ -114,18 +109,16 @@ def get_new_movie_json(imdb_guid, debug=False):
     return movie_data
 
 
-def send_movie_notification(imdb_guid, debug=False, dryrun=False):
-    json = get_new_movie_json(imdb_guid)
-    slack = SlackSender(json_attachments=json, debug=debug, dryrun=dryrun)
+def send_movie_notification(args):
+    json = get_new_movie_json(imdb_guid=args.imdb_guid, debug=args.debug)
+    slack = SlackSender(
+        json_attachments=json, debug=args.debug, dryrun=args.dryrun)
     slack.send()
 
 
 def main():
     args = parse_arguments()
-    imdb_guid = args.imdb_guid
-    # imdb_guid = 'tt1285016'
-
-    send_movie_notification(imdb_guid, debug=True, dryrun=False)
+    send_movie_notification(args)
 
 
 if __name__ == '__main__':

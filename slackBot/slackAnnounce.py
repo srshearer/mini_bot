@@ -3,7 +3,8 @@
 
 """
 Version: 3.0
-About: Post to Slack via webhooks
+About:
+    Formats a given message into json to send to Slack via webhooks.
 """
 import sys
 import os.path
@@ -70,13 +71,17 @@ def set_message(args):
     return json_attachments
 
 
-def main():
-    args = parse_arguments()
+def send_slack_message(args):
     json = set_message(args)
     slack = SlackSender(
         json_attachments=json, room=args.room,
         debug=args.debug, dryrun=args.dryrun)
     slack.send()
+
+
+def main():
+    args = parse_arguments()
+    send_slack_message(args)
 
 
 if __name__ == '__main__':

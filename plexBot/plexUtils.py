@@ -6,14 +6,8 @@ Version: 2.0
 Steven Shearer / srshearer@gmail.com
 
 About:
-    For interacting with a Plex server to extract information out to build a
-    json message to be sent to Slack via slackAnnounce.
-
-To do:
-    - add/improve exception handling
-    - improve documentation, usage, help, etc
-    - get token based auth working
-    - verify movie search results were actually added to Plex recently
+    Utilities for interacting with a Plex server and OMDb to extract information
+    about movies.
 """
 
 import sys
@@ -40,11 +34,8 @@ class OMDbException(Exception):
 
 
 class PlexSearch(object):
-    def __init__(self, debug=False):
-        self._plex_server_url = plex_config.PLEX_SERVER_URL
-        self._plex_server_name = plex_config.PLEX_SERVER_NAME
-        self._plex_user = plex_config.PLEX_USERNAME
-        self._plex_pw = plex_config.PLEX_PASSWORD
+    def __init__(self, con_type='token', debug=False):
+        self._con_type = con_type
         self.debug = debug
         self.plex = self._get_server_instance()
 
@@ -52,12 +43,33 @@ class PlexSearch(object):
         """
         Uses PlexAPI to instantiate a Plex server connection
         """
-        if self.debug:
-            print 'Connecting to Plex...'
-        account = MyPlexAccount(self._plex_user, self._plex_pw)
-        plex = account.resource(self._plex_server_name).connect()
+        if self._con_type == 'user':
+            plex = self._plex_account()
+        elif self._con_type == 'token':
+            plex = self._plex_token()
+        else:
+            raise PlexException(
+                'Invalid Plex connection type: {}'.format(self._con_type))
+
         if self.debug:
             print 'Connected'
+
+        return plex
+
+    def _plex_account(self):
+        if self.debug:
+            print 'Connecting to Plex: user auth'
+        account = MyPlexAccount(
+            plex_config.PLEX_USERNAME, plex_config.PLEX_PASSWORD)
+        plex = account.resource(plex_config.PLEX_SERVER_NAME).connect()
+
+        return plex
+
+    def _plex_token(self):
+        if self.debug:
+            print 'Connecting to Plex: token auth'
+        from plexapi.server import PlexServer
+        plex = PlexServer(plex_config.PLEX_SERVER_URL, plex_config.PLEX_TOKEN)
 
         return plex
 

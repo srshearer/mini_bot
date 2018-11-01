@@ -3,7 +3,8 @@
 
 """
 Version: 3.0
-About: Post to Slack via webhooks
+About:
+    Utilities for interacting with Slack.
 """
 import os
 import sys
@@ -23,7 +24,7 @@ class SlackException(Exception):
 
 class SlackSender(object):
     def __init__(self, room=None, json_attachments=None,
-                 debug=True, dryrun=False, **kwargs):
+                 debug=True, dryrun=False):
         self.debug = debug
         self.dryrun = dryrun
         self.room = room
@@ -126,7 +127,7 @@ class SlackSender(object):
 
 
 def text_color(requested_color):
-    """Takes a color alias (str) and returns the color value"""
+    """Takes a color alias (str) and returns the color value if available"""
     text_color_dict = {
         'default': '#d3d3d3',
         'info': '#d3d3d3',
@@ -142,10 +143,9 @@ def text_color(requested_color):
     if requested_color in text_color_dict:
         return_color = text_color_dict[requested_color]
     else:
+        print 'ERROR - Invalid color: {}'.format(requested_color)
+        print 'Available colors: {}'.format(list(text_color_dict))
         return_color = text_color_dict['default']
-        print 'ERROR - Invalid color: ' + requested_color
-        print 'Available colors: '.format(return_color)
-        print list(text_color_dict)
-        sys.exit(1)
+        print 'Returning default color: '.format(return_color)
 
     return return_color
