@@ -23,10 +23,9 @@ class SlackException(Exception):
 
 
 class SlackSender(object):
-    def __init__(self, room=None, json_attachments=None,
-                 debug=True, dryrun=False):
-        self.debug = debug
-        self.dryrun = dryrun
+    def __init__(self, room=None, json_attachments=None, **kwargs):
+        self.debug = kwargs.get('debug', False)
+        self.dryrun = kwargs.get('dryrun', False)
         self.room = room
         self._set_debug_state()
         self._room = self._set_room()

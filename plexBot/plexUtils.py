@@ -35,22 +35,22 @@ class OMDbException(Exception):
 
 
 class PlexSearch(object):
-    def __init__(self, con_type='token', debug=False):
-        self._con_type = con_type
-        self.debug = debug
+    def __init__(self, **kwargs):
+        self.con_type = kwargs.get('con_type', plex_config.PLEX_CON_TYPE)
+        self.debug = kwargs.get('debug', False)
         self.plex = self._get_server_instance()
 
     def _get_server_instance(self):
         """
         Uses PlexAPI to instantiate a Plex server connection
         """
-        if self._con_type == 'user':
+        if self.con_type == 'user':
             plex = self._plex_account()
-        elif self._con_type == 'token':
+        elif self.con_type == 'token':
             plex = self._plex_token()
         else:
             raise PlexException(
-                'Invalid Plex connection type: {}'.format(self._con_type))
+                'Invalid Plex connection type: {}'.format(self.con_type))
 
         if self.debug:
             print 'Connected'
@@ -101,8 +101,8 @@ class PlexSearch(object):
 
 
 class OmdbSearch(object):
-    def __init__(self, debug=False):
-        self.debug = debug
+    def __init__(self, **kwargs):
+        self.debug = kwargs.get('debug', False)
         self._omdb_key = plex_config.OMDB_API_KEY
 
     def _get_omdb_url(self, imdb_guid):

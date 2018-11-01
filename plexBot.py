@@ -19,9 +19,10 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
 import argparse
+import plexBot.plex_config as config
 import plexBot.plexUtils as pu
 from plexBot.plexUtils import PlexSearch, OmdbSearch
-from slackBot.slackUtils import SlackSender
+from slackBot.slackUtils import SlackSender, text_color
 
 
 def parse_arguments():
@@ -43,13 +44,13 @@ def parse_arguments():
 
 
 class MovieNotification(object):
-    def __init__(self, debug=False):
-        self.debug = debug
+    def __init__(self, **kwargs):
+        self.debug = kwargs.get('debug', False)
         self.imdb_guid = None
-        self.color = 'purple'
-        self._plex_helper = PlexSearch(debug=debug)
+        self.color = text_color('purple')
+        self._plex_helper = PlexSearch(**kwargs)
         self._plex_result = None
-        self._omdb_helper = OmdbSearch(debug=debug)
+        self._omdb_helper = OmdbSearch(**kwargs)
         self._omdb_result = None
 
     def search(self, imdb_guid):
@@ -102,17 +103,26 @@ class MovieNotification(object):
             plot, director, rating, filesize)
 
 
-def get_new_movie_json(imdb_guid, debug=False):
-    movie_searcher = MovieNotification(debug=debug)
+def get_new_movie_json(imdb_guid, **kwargs):
+    movie_searcher = MovieNotification(**kwargs)
     movie_data = movie_searcher.search(imdb_guid)
 
     return movie_data
 
 
 def send_movie_notification(args):
-    json = get_new_movie_json(imdb_guid=args.imdb_guid, debug=args.debug)
+    movie_json = get_new_movie_json(
+        imdb_guid=args.imdb_guid,
+        debug=args.debug,
+        con_type=config.PLEX_CON_TYPE
+    )
+
     slack = SlackSender(
-        json_attachments=json, debug=args.debug, dryrun=args.dryrun)
+        json_attachments=movie_json,
+        debug=args.debug,
+        dryrun=args.dryrun
+    )
+
     slack.send()
 
 
