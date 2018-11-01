@@ -3,3 +3,4 @@ env
 .DS_Store
 secrets.py
 *config.py
+.idea
