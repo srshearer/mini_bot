@@ -1,0 +1,219 @@
+#!/usr/bin/python -u
+# encoding: utf-8
+
+"""
+Version: 2.0
+Steven Shearer / srshearer@gmail.com
+
+About:
+    For interacting with a Plex server to extract information out to build a
+    json message to be sent to Slack via slackAnnounce.
+
+To do:
+    - add/improve exception handling
+    - improve documentation, usage, help, etc
+    - get token based auth working
+    - verify movie search results were actually added to Plex recently
+"""
+
+import sys
+import os.path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__),
+                                '/usr/local/lib/python2.7/site-packages'))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import re
+import math
+import requests
+import plex_config
+from plexapi.myplex import MyPlexAccount
+
+
+class PlexException(Exception):
+    """Custom exception for Plex related failures."""
+    pass
+
+
+class OMDbException(Exception):
+    """Custom exception for OMDb related failures."""
+    pass
+
+
+class PlexSearch(object):
+    def __init__(self, debug=False):
+        self._plex_server_url = plex_config.PLEX_SERVER_URL
+        self._plex_server_name = plex_config.PLEX_SERVER_NAME
+        self._plex_user = plex_config.PLEX_USERNAME
+        self._plex_pw = plex_config.PLEX_PASSWORD
+        self.debug = debug
+        self.plex = self._get_server_instance()
+
+    def _get_server_instance(self):
+        """
+        Uses PlexAPI to instantiate a Plex server connection
+        """
+        if self.debug:
+            print 'Connecting to Plex...'
+        account = MyPlexAccount(self._plex_user, self._plex_pw)
+        plex = account.resource(self._plex_server_name).connect()
+        if self.debug:
+            print 'Connected'
+
+        return plex
+
+    def movie_search(self, imdb_guid):
+        """Uses PlexAPI to search for a movie via IMDb guid.
+        Requires:
+            - IMDb guid of a movie to search for
+        Returns the first result video object.
+        """
+        movies = self.plex.library.section('Movies')
+        found_movies = []
+
+        if self.debug:
+            print 'Searching Plex: {}'.format(imdb_guid)
+
+        for result in movies.search(guid=imdb_guid):
+            found_movies.append(result)
+
+        try:
+            video = found_movies[0]
+        except IndexError:
+            print 'Error: Could not locate movie: {}'.format(imdb_guid)
+            sys.exit(1)
+
+        if self.debug:
+            print 'Found: {} ({})'.format(video.title, video.year)
+
+        return video
+
+
+class OmdbSearch(object):
+    def __init__(self, debug=False):
+        self.debug = debug
+        self._omdb_key = plex_config.OMDB_API_KEY
+
+    def _get_omdb_url(self, imdb_guid):
+        omdb_url = 'http://www.omdbapi.com/?i={}&plot=short&apikey={}'.format(
+            imdb_guid, self._omdb_key
+        )
+
+        return omdb_url
+
+    def search(self, imdb_guid):
+        """Generic function to query a url via requests.get.
+        Requires url to get query
+        Returns a json response.
+        """
+        if self.debug:
+            print 'Searching OMDb: {}'.format(imdb_guid)
+
+        omdb_query_url = self._get_omdb_url(imdb_guid)
+        if self.debug:
+            print 'Query url: {}'.format(omdb_query_url)
+
+        response = requests.get(
+            omdb_query_url,
+            headers={'Content-Type': 'application/json'}
+        )
+
+        if self.debug:
+            print 'Response: {} \n{}'.format(
+                response.status_code, response.text)
+
+        if response.status_code != 200:
+            raise ValueError(
+                'Request to slack returned an error {}, the response is:\n'
+                '{}'.format(response.status_code, response.text)
+            )
+        else:
+            return response.text
+
+
+def conv_millisec_to_min(milliseconds):
+    """Requires int(milliseconds) and converts it to minutes.
+    Returns: string(duration) (i.e. 117 min)
+    """
+    s, remainder = divmod(milliseconds, 1000)
+    m, s = divmod(s, 60)
+    minute_string = '{} min'.format(m)
+    return minute_string
+
+
+def get_video_quality(movie):
+    """Takes a media object and loops through the media element to return the
+    video quality formatted as a string: 1080p, 720p, 480p, SD, etc…
+    Requires:
+        - PlexAPI video object
+    Returns: str(movie quality)
+    """
+    media_items = movie.media
+    quality = 'SD'
+    for elem in media_items:
+        raw_quality = str(elem.videoResolution)
+        quality = format_quality(raw_quality)
+    if quality:
+        return quality
+
+
+def format_quality(raw_quality):
+    """Takes video quality string and converts it to one of the following:
+    1080p, 720p, 480p, SD
+    """
+    input_quality = str(raw_quality)
+    known_qualities = ['1080', '720', '480']
+    if input_quality in known_qualities:
+        quality = input_quality + 'p'
+    else:
+        quality = input_quality.upper()
+    return str(quality)
+
+
+def get_filesize(movie):
+    """Takes a media object and loops through the media element, then the media
+    part, to return the filesize in bytes.
+    Requires:
+        - PlexAPI video object
+    Returns:
+        - str(filesize) in human readable format (i.e. 3.21 GB)
+    """
+    media_items = movie.media
+    raw_filesize = 0
+    for media_elem in media_items:
+        for media_part in media_elem.parts:
+            raw_filesize += media_part.size
+    filesize = convert_file_size(raw_filesize)
+    return filesize
+
+
+def convert_file_size(size_bytes):
+    """Converts file size in bytes as to human readable format.
+    Requires:
+        - int(bytes)
+    Returns:
+        - string (i.e. 3.21 GB)
+    """
+    if size_bytes == 0:
+        return '0B'
+    size_name = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB')
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+
+    return '{} {}'.format(s, size_name[i])
+
+
+def get_clean_imdb_guid(guid):
+    """Takes an IMDb url and returns only the IMDb guid as a string.
+    Requires:
+        - str(IMDb url)
+    Returns:
+        - str(IMDb guid)
+    """
+    result = re.search('.+//(.+)\?.+', guid)
+    if result:
+        clean_guid = result.group(1)
+        return clean_guid
+    else:
+        print 'ERROR - Could not determine IMDb guid from ' + guid
+        sys.exit(1)

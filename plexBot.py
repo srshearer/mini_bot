@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-Version: 1.1
+Version: 2.0
 Steven Shearer / srshearer@gmail.com
 
 About:
@@ -16,20 +16,17 @@ To do:
     - verify movie search results were actually added to Plex recently
 """
 
-import os
 import sys
-import re
-import math
-import json
-import argparse
+import os.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__),
                                 '/usr/local/lib/python2.7/site-packages'))
-import requests
-from plexapi.myplex import MyPlexAccount
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from plexBot import plex_config
-from slackBot import slackAnnounce
+import json
+import argparse
+import plexBot.plexUtils as pu
+from plexBot.plexUtils import PlexSearch, OmdbSearch
+from slackBot.slackUtils import SlackSender
 
 
 def parse_arguments():
@@ -46,250 +43,90 @@ def parse_arguments():
                         required=True, action='store',
                         help='Find movie by IMDb guid.')
     args = parser.parse_args()
+
     return args
 
 
-class DefaultsBundle(object):
-    def __init__(self):
-        self.plex_server_url = plex_config.PLEX_SERVER_URL
-        self.plex_server_name = plex_config.PLEX_SERVER_NAME
-        self.plex_user = plex_config.PLEX_USERNAME
-        self.plex_pw = plex_config.PLEX_PASSWORD
-        self.omdb_key = plex_config.OMDB_API_KEY
-        self.maxresults = 3
-        self.debug = False
-        self.dryrun = False
-        self.color = slackAnnounce.text_color('purple')
-
-
-class SlackArgsBundle(object):
-    def __init__(self, json_attachments, debug=False, dryrun=False):
-        self.json_attachments = json_attachments
+class MovieNotification(object):
+    def __init__(self, debug=False):
         self.debug = debug
-        self.dryrun = dryrun
+        self.imdb_guid = None
+        self.color = 'purple'
+        self._plex_helper = PlexSearch(debug)
+        self._plex_result = None
+        self._omdb_helper = OmdbSearch(debug)
+        self._omdb_result = None
 
+    def search(self, imdb_guid):
+        self.imdb_guid = imdb_guid
+        self._plex_result = self._plex_helper.movie_search(imdb_guid)
+        self._omdb_result = self._get_omdb_info(imdb_guid)
 
-class Movie(object):
-    def __init__(self, movie_info_plex, defaults):
-        self.imdb_guid = get_clean_imdb_guid(movie_info_plex.guid)
-        self.color = defaults.color
+        return self.json_attachment
 
-        self.title = str(movie_info_plex.title)
-        self.year = str(movie_info_plex.year)
-        self.rating = str(movie_info_plex.contentRating)
-        self._raw_duration = movie_info_plex.duration
-        self.duration = conv_milisec_to_min(self._raw_duration)
-        self.quality = get_video_quality(movie_info_plex)
-        self.filesize = get_filesize(movie_info_plex)
-        self._media_items = movie_info_plex.media
+    def _get_omdb_info(self, imdb_guid):
+        omdb_result = self._omdb_helper.search(imdb_guid)
+        _omdb_info_data = json.loads(omdb_result)
 
-        self._omdb_json = self._get_omdb_info(self.imdb_guid, defaults.omdb_key)
-        self.plot = self._omdb_json['Plot']
-        self.poster_link = self._omdb_json['Poster']
-        self.rating = self._omdb_json['Rated']
-        self.director = self._omdb_json['Director']
-        self.writer = self._omdb_json['Writer']
-        self.revenue = self._omdb_json['BoxOffice']
-        self.duration = self._omdb_json['Runtime']
-
-    def _get_omdb_info(self, imdb_guid, omdb_key):
-        _omdb_info_json = get_omdb_info(imdb_guid, omdb_key)
-        print _omdb_info_json
-        _omdb_info_data = json.loads(_omdb_info_json)
-        print _omdb_info_data
         return _omdb_info_data
 
     @property
     def json_attachment(self):
-        json_attachment = get_movie_notification_json(self)
-        return json_attachment
+        quality = pu.get_video_quality(self._plex_result)
+        filesize = pu.get_filesize(self._plex_result)
+
+        plot = self._omdb_result['Plot']
+        poster_link = self._omdb_result['Poster']
+        rating = self._omdb_result['Rated']
+        director = self._omdb_result['Director']
+        duration = self._omdb_result['Runtime']
+
+        pretext = 'New Movie Available: '
+        movie_title_year = '{} ({})'.format(
+            self._plex_result.title, self._plex_result.year)
+        title = '{} {}'.format(movie_title_year, quality)
+        title_link ='http://www.imdb.com/title/{}'.format(self.imdb_guid)
+        fallback = '{} {}'.format(pretext, movie_title_year, quality)
+
+        json_attachments = {
+            "fallback": fallback,
+            "color": self.color,
+            "pretext": pretext,
+            "title": title,
+            "title_link": title_link,
+            "text": duration,
+            "footer": self._format_footer(plot, director, rating, filesize),
+            "image_url": poster_link,
+        }
+
+        return json_attachments
+
+    @staticmethod
+    def _format_footer(plot, director, rating, filesize):
+        return '{} \n\nDirected by: {} \nRated[{}]\nSize: {}\nPoster: '.format(
+            plot, director, rating, filesize)
 
 
-def get_movie_notification_json(movie):
-    pretext = 'New Movie Available: '
-    movie_title_year = '{} ({})'.format(movie.title, movie.year)
-    fallback = '{} {}'.format(pretext, movie_title_year)
-    color = movie.color
-    imdb_guid = movie.imdb_guid
-    quality = movie.quality
-    duration = movie.duration
-    plot = movie.plot
-    director = movie.director
-    rating = movie.rating
-    poster_link = movie.poster_link
-    filesize = movie.filesize
+def get_new_movie_json(imdb_guid, debug=False):
+    movie_searcher = MovieNotification(debug=debug)
+    movie_data = movie_searcher.search(imdb_guid)
 
-    json_attachments = {
-        "fallback": fallback,
-        "color": color,
-        "pretext": pretext,
-        "title": '{} {}'.format(movie_title_year, quality),
-        "title_link": 'http://www.imdb.com/title/' + imdb_guid,
-        "text": duration,
-        "footer": '{} \n\nDirected by: {} \nRated [{}]\nSize: {}\nPoster: '.format(
-            plot, director, rating, filesize),
-        "image_url": poster_link,
-    }
-    return json_attachments
+    return movie_data
 
-def get_server_instance(defaults):
-    """Uses PlexAPI to instansiate a Plex server connection.
-    Requires a Defaults object with…
-        - Plex username: Defaults.plex_user
-        - Plex password: Defaults.plex_pw
-        - Plex server name: Defaults.plex_server_name
-    """
-    user = defaults.plex_user
-    password = defaults.plex_pw
-    servername = defaults.plex_server_name
-    account = MyPlexAccount(user, password)
-    plex = account.resource(servername).connect()
-    return plex
 
-def search_plex(plex, imdb_guid):
-    """Uses PlexAPI to search for a movie via IMDb guid.
-    Requires:
-        - plex server instance object
-        - IMDb guid of a movie to search for
-    Returns a video object.
-    """
-    movies = plex.library.section('Movies')
-    found_movies = []
-    for result in movies.search(guid=imdb_guid):
-        found_movies.append(result)
-    if len(found_movies) < 1:
-        print 'Error: Could not locate movie: {}'.format(imdb_guid)
-        sys.exit(1)
-    for video in found_movies:
-        print 'Found: {}'.format(video.title)
-    return video
+def send_movie_notification(imdb_guid, debug=False, dryrun=False):
+    json = get_new_movie_json(imdb_guid)
+    slack = SlackSender(json_attachments=json, debug=debug, dryrun=dryrun)
+    slack.send()
 
-def querey_omdb(omdb_query_url):
-    """Generic function to query a url via requests.get.
-    Requires url to get query
-    Returns a json response.
-    """
-    response = requests.get(omdb_query_url,
-        headers={'Content-Type': 'application/json'}
-    )
-    if response.status_code != 200:
-        raise ValueError(
-            'Request to slack returned an error %s, the response is:\n%s'
-            % (response.status_code, response.text)
-        )
-    else:
-        return response.text
-
-def get_omdb_info(imdb_guid, omdb_key):
-    """Queries OMDb for additional information about a movie given an IMDb guid.
-    Requires:
-        - IMDb guid to search for
-        - OMDb api key
-    Returns:
-        - json response
-    """
-    omdb_querey_url = 'http://www.omdbapi.com/?i='
-    omdb_querey_url = omdb_querey_url + imdb_guid + '&plot=short&apikey=' + omdb_key
-    omdb_json_result = querey_omdb(omdb_querey_url)
-    return omdb_json_result
-
-def conv_milisec_to_min(miliseconds):
-    """Requires int(miliseconds) and converts it to minutes.
-    Returns: string(duration) (i.e. 117 min)
-    """
-    s, remainder = divmod(miliseconds, 1000)
-    m, s = divmod(s, 60)
-    min = '{} min'.format(m)
-    return min
-
-def get_video_quality(movie):
-    """Takes a media object and loops through the media element to return the
-    video quality formatted as a string: 1080p, 720p, 480p, SD, etc…
-    Requires:
-        - PlexAPI video object
-    Returns: str(movie quality)
-    """
-    media_items = movie.media
-    for elem in media_items:
-        raw_quality = str(elem.videoResolution)
-        quality = format_quality(raw_quality)
-    if quality:
-        return quality
-
-def format_quality(raw_quality):
-    """Takes video quality string and converts it to one of the following:
-    1080p, 720p, 480p, SD
-    """
-    input_quality = str(raw_quality)
-    known_qualities = ['1080', '720', '480']
-    if input_quality in known_qualities:
-        quality = input_quality + 'p'
-    else:
-        quality = input_quality.upper()
-    return str(quality)
-
-def get_filesize(movie):
-    """Takes a media object and loops through the media element, then the media
-    part, to return the filesize in bytes.
-    Requires:
-        - PlexAPI video object
-    Returns:
-        - str(filesize) in human readable format (i.e. 3.21 GB)
-    """
-    media_items = movie.media
-    raw_filesize = 0
-    for media_elem in media_items:
-        for media_part in media_elem.parts:
-            raw_filesize += media_part.size
-    filesize = convert_file_size(raw_filesize)
-    return filesize
-
-def convert_file_size(size_bytes):
-   """Converts file size in bytes as to human readable format.
-   Requires:
-        - int(bytes)
-   Returns:
-        - string (i.e. 3.21 GB)
-   """
-   if size_bytes == 0:
-       return '0B'
-   size_name = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB')
-   i = int(math.floor(math.log(size_bytes, 1024)))
-   p = math.pow(1024, i)
-   s = round(size_bytes / p, 2)
-   return '{} {}'.format(s, size_name[i])
-
-def get_clean_imdb_guid(guid):
-    """Takes an IMDb url and returns only the IMDb guid as a string.
-    Requires:
-        - str(IMDb url)
-    Returns:
-        - str(IMDb guid)
-    """
-    result = re.search('.+//(.+)\?.+', guid)
-    if result:
-        clean_guid = result.group(1)
-        return clean_guid
-    else:
-        print 'ERROR - Could not determine IMDb guid from ' + guid
-        sys.exit(1)
 
 def main():
-    defaults = DefaultsBundle()
     args = parse_arguments()
-    debug, dryrun = slackAnnounce.get_debug_state(args, defaults)
-    imdb_guid = str(args.imdb_guid)
+    imdb_guid = args.imdb_guid
+    # imdb_guid = 'tt1285016'
 
-    plex = get_server_instance(defaults)
-    movie_info_plex = search_plex(plex, imdb_guid)
-    new_movie = Movie(movie_info_plex, defaults)
+    send_movie_notification(imdb_guid, debug=True, dryrun=False)
 
-    slack_args = SlackArgsBundle(new_movie.json_attachment,
-                                 debug=debug, dryrun=dryrun)
-    slack_defaults = slackAnnounce.DefaultsBundle()
-    message_obj = slackAnnounce.set_slack_message(slack_args, slack_defaults)
-
-    slackAnnounce.post_message(message_obj)
 
 if __name__ == '__main__':
     main()
