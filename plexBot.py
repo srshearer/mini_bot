@@ -98,7 +98,7 @@ class MovieNotification(object):
 
     @staticmethod
     def _format_footer(plot, director, rating, filesize):
-        return '{} \n\nDirected by: {} \nRated[{}]\nSize: {}\nPoster: '.format(
+        return '{} \n\nDirected by: {} \nRated [{}]\nSize: {}\nPoster: '.format(
             plot, director, rating, filesize)
 
 
