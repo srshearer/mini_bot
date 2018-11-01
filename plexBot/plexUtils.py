@@ -21,6 +21,7 @@ import math
 import requests
 import plex_config
 from plexapi.myplex import MyPlexAccount
+from plexapi.server import PlexServer
 
 
 class PlexException(Exception):
@@ -68,7 +69,6 @@ class PlexSearch(object):
     def _plex_token(self):
         if self.debug:
             print 'Connecting to Plex: token auth'
-        from plexapi.server import PlexServer
         plex = PlexServer(plex_config.PLEX_SERVER_URL, plex_config.PLEX_TOKEN)
 
         return plex
