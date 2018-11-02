@@ -1,5 +1,15 @@
 #!/usr/bin/python -u
 # encoding: utf-8
+from __future__ import print_function, unicode_literals, absolute_import
+import sys
+import os.path
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..')))
+import json
+import argparse
+from pyBots.plexBot import plexUtils as pu
+from pyBots.plexBot import plex_config as config
+from pyBots.slackBot.slackUtils import SlackSender, text_color
 
 """
 Version: 2.0
@@ -10,19 +20,6 @@ About:
     information about the movie, and format it into json to send as
     a rich Slack message/
 """
-
-import sys
-import os.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__),
-                                '/usr/local/lib/python2.7/site-packages'))
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import json
-import argparse
-import plexBot.plex_config as config
-import plexBot.plexUtils as pu
-from plexBot.plexUtils import PlexSearch, OmdbSearch
-from slackBot.slackUtils import SlackSender, text_color
 
 
 def parse_arguments():
@@ -51,9 +48,9 @@ class MovieNotification(object):
         self.debug = kwargs.get('debug', False)
         self.imdb_guid = None
         self.color = text_color('purple')
-        self._plex_helper = PlexSearch(**kwargs)
+        self._plex_helper = pu.PlexSearch(**kwargs)
         self._plex_result = None
-        self._omdb_helper = OmdbSearch(**kwargs)
+        self._omdb_helper = pu.OmdbSearch(**kwargs)
         self._omdb_result = None
 
     def search(self, imdb_guid):

@@ -1,6 +1,18 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 
+from __future__ import print_function, unicode_literals, absolute_import
+import sys
+import os.path
+# sys.path.insert(0, os.path.abspath(os.path.join(
+#     os.path.dirname(__file__), '..', '..')))
+import re
+import math
+import requests
+from pyBots.plexBot import plex_config
+from plexapi.myplex import MyPlexAccount
+from plexapi.server import PlexServer
+
 """
 Version: 2.0
 Steven Shearer / srshearer@gmail.com
@@ -9,19 +21,6 @@ About:
     Utilities for interacting with a Plex server and OMDb to extract information
     about movies.
 """
-
-import sys
-import os.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__),
-                                '/usr/local/lib/python2.7/site-packages'))
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import re
-import math
-import requests
-import plex_config
-from plexapi.myplex import MyPlexAccount
-from plexapi.server import PlexServer
 
 
 class PlexException(Exception):
@@ -57,7 +56,7 @@ class PlexSearch(object):
                 'Invalid Plex connection type: {}'.format(self.auth_type))
 
         if self.debug:
-            print 'Connected'
+            print('Connected')
 
         return plex
 
@@ -69,7 +68,7 @@ class PlexSearch(object):
         Returns MyPlexAccount object
         """
         if self.debug:
-            print 'Connecting to Plex: user auth'
+            print('Connecting to Plex: user auth')
         account = MyPlexAccount(
             plex_config.PLEX_USERNAME, plex_config.PLEX_PASSWORD)
         plex = account.resource(plex_config.PLEX_SERVER_NAME).connect()
@@ -83,7 +82,7 @@ class PlexSearch(object):
         Returns PlexServer object
         """
         if self.debug:
-            print 'Connecting to Plex: token auth'
+            print('Connecting to Plex: token auth')
         plex = PlexServer(plex_config.PLEX_SERVER_URL, plex_config.PLEX_TOKEN)
 
         return plex
@@ -98,7 +97,7 @@ class PlexSearch(object):
         found_movies = []
 
         if self.debug:
-            print 'Searching Plex: {}'.format(imdb_guid)
+            print('Searching Plex: {}'.format(imdb_guid))
 
         for result in movies.search(guid=imdb_guid):
             found_movies.append(result)
@@ -106,11 +105,11 @@ class PlexSearch(object):
         try:
             video = found_movies[0]
         except IndexError:
-            print 'Error: Could not locate movie: {}'.format(imdb_guid)
+            print('Error: Could not locate movie: {}'.format(imdb_guid))
             sys.exit(1)
 
         if self.debug:
-            print 'Found: {} ({})'.format(video.title, video.year)
+            print('Found: {} ({})'.format(video.title, video.year))
 
         return video
 
@@ -134,11 +133,11 @@ class OmdbSearch(object):
         Returns a json response.
         """
         if self.debug:
-            print 'Searching OMDb: {}'.format(imdb_guid)
+            print('Searching OMDb: {}'.format(imdb_guid))
 
         omdb_query_url = self._get_omdb_url(imdb_guid)
         if self.debug:
-            print 'Query url: {}'.format(omdb_query_url)
+            print('Query url: {}'.format(omdb_query_url))
 
         response = requests.get(
             omdb_query_url,
@@ -146,8 +145,8 @@ class OmdbSearch(object):
         )
 
         if self.debug:
-            print 'Response: {} \n{}'.format(
-                response.status_code, response.text)
+            print('Response: {} \n{}'.format(
+                response.status_code, response.text))
 
         if response.status_code != 200:
             raise ValueError(
@@ -243,5 +242,5 @@ def get_clean_imdb_guid(guid):
         clean_guid = result.group(1)
         return clean_guid
     else:
-        print 'ERROR - Could not determine IMDb guid from ' + guid
+        print('ERROR - Could not determine IMDb guid: {}'.format(guid))
         sys.exit(1)

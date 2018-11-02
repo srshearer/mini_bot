@@ -6,15 +6,14 @@ Version: 3.0
 About:
     Utilities for interacting with Slack.
 """
-import os
+from __future__ import print_function, unicode_literals, absolute_import
 import sys
+import os.path
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..')))
 import json
-sys.path.insert(0, os.path.join(os.path.dirname(__file__),
-                                '/usr/local/lib/python2.7/site-packages'))
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import requests
-import slack_config
+from pyBots.slackBot import slack_config
 
 
 class SlackException(Exception):
@@ -108,9 +107,9 @@ class SlackSender(object):
         }
 
         if self.debug:
-            print '{}'.format(self._json_payload)
+            print('{}'.format(self._json_payload))
         if self.dryrun:
-            print '[Dry run. Not posting message.]'
+            print('[Dry run. Not posting message.]')
         else:
             response = requests.post(
                 self._webhook_url, data=json.dumps(self._json_payload),
@@ -122,8 +121,8 @@ class SlackSender(object):
                     '{}'.format(response.status_code, response.text)
                 )
             else:
-                print 'Result: [{}] {}'.format(
-                    response.status_code, response.text)
+                print('Result: [{}] {}'.format(
+                    response.status_code, response.text))
 
         return
 
@@ -150,12 +149,12 @@ def text_color(requested_color):
         'purple': colors['purple'],
     }
 
-    if requested_color.lower() in map(str.lower, text_color_dict):
+    if requested_color.lower() in map(unicode.lower, text_color_dict):
         return_color = text_color_dict[requested_color]
     else:
-        print 'ERROR - Invalid color: {}'.format(requested_color)
-        print 'Available colors: {}'.format(list(text_color_dict))
+        print('ERROR - Invalid color: {}'.format(requested_color))
+        print('Available colors: {}'.format(list(text_color_dict)))
         return_color = text_color_dict['default']
-        print 'Returning default color: '.format(return_color)
+        print('Returning default color: '.format(return_color))
 
     return return_color

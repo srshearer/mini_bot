@@ -6,13 +6,14 @@ Version: 3.0
 About:
     Formats a given message into json to send to Slack via webhooks.
 """
+from __future__ import print_function, unicode_literals, absolute_import
 import sys
 import os.path
 import argparse
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import slack_config
-from slackUtils import SlackSender, SlackException, text_color
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..')))
+from pyBots.slackBot import slack_config
+from pyBots.slackBot.slackUtils import SlackSender, SlackException, text_color
 
 
 def parse_arguments():
