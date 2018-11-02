@@ -3,9 +3,6 @@
 
 from __future__ import print_function, unicode_literals, absolute_import
 import sys
-import os.path
-# sys.path.insert(0, os.path.abspath(os.path.join(
-#     os.path.dirname(__file__), '..', '..')))
 import re
 import math
 import requests
