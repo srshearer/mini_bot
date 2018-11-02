@@ -27,6 +27,7 @@ class SlackSender(object):
         self.debug = kwargs.get('debug', False)
         self.dryrun = kwargs.get('dryrun', False)
         self.room = room
+        self.color = kwargs.get('color', text_color('info'))
         self._set_debug_state()
         self._room = self._set_room()
         self._webhook_url = self._set_webhook()
@@ -85,8 +86,10 @@ class SlackSender(object):
 
         return webhook_url
 
-    def set_simple_message(self, title=slack_config.DEFAULT_TITLE,
-                           text='', color='', fallback=None):
+    def set_simple_message(self, text='', **kwargs):
+        title = kwargs.get('title', slack_config.DEFAULT_TITLE)
+        color = kwargs.get('color', self.color)
+        fallback = kwargs.get('fallback', None)
 
         self.json_attachments = {
             "fallback": fallback or title,
@@ -127,19 +130,27 @@ class SlackSender(object):
 
 def text_color(requested_color):
     """Takes a color alias (str) and returns the color value if available"""
-    text_color_dict = {
-        'default': '#d3d3d3',
-        'info': '#d3d3d3',
-        'good': 'good',
+    colors = {
+        'grey': '#d3d3d3',
         'green': 'good',
-        'warn': 'warning',
         'orange': 'warning',
-        'danger': 'danger',
         'red': 'danger',
-        'purple': '#764FA5'
+        'purple': '#764FA5',
     }
 
-    if requested_color in text_color_dict:
+    text_color_dict = {
+        'default': colors['grey'],
+        'info': colors['grey'],
+        'good': colors['green'],
+        'green': colors['green'],
+        'warn': colors['orange'],
+        'orange': colors['orange'],
+        'danger': colors['red'],
+        'red': colors['red'],
+        'purple': colors['purple'],
+    }
+
+    if requested_color.lower() in map(str.lower, text_color_dict):
         return_color = text_color_dict[requested_color]
     else:
         print 'ERROR - Invalid color: {}'.format(requested_color)

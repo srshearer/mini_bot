@@ -35,8 +35,12 @@ class OMDbException(Exception):
 
 
 class PlexSearch(object):
+    """Connects to a Plex server via PlexAPI to allow searching for media items.
+    Optional kwargs:
+        - auth_type (user or token): choose authentication method
+    """
     def __init__(self, **kwargs):
-        self.con_type = kwargs.get('con_type', plex_config.PLEX_CON_TYPE)
+        self.auth_type = kwargs.get('auth_type', plex_config.PLEX_AUTH_TYPE)
         self.debug = kwargs.get('debug', False)
         self.plex = self._get_server_instance()
 
@@ -44,13 +48,13 @@ class PlexSearch(object):
         """
         Uses PlexAPI to instantiate a Plex server connection
         """
-        if self.con_type == 'user':
+        if self.auth_type == 'user':
             plex = self._plex_account()
-        elif self.con_type == 'token':
+        elif self.auth_type == 'token':
             plex = self._plex_token()
         else:
             raise PlexException(
-                'Invalid Plex connection type: {}'.format(self.con_type))
+                'Invalid Plex connection type: {}'.format(self.auth_type))
 
         if self.debug:
             print 'Connected'
@@ -58,6 +62,12 @@ class PlexSearch(object):
         return plex
 
     def _plex_account(self):
+        """Uses PlexAPI to connect to the Plex server using an account
+        and password. THis method is much slower than using a token.
+        Requires:
+            - IMDb guid of a movie to search for
+        Returns MyPlexAccount object
+        """
         if self.debug:
             print 'Connecting to Plex: user auth'
         account = MyPlexAccount(
@@ -67,6 +77,11 @@ class PlexSearch(object):
         return plex
 
     def _plex_token(self):
+        """Uses PlexAPI to connect to the Plex server using a token.
+        Requires:
+            - IMDb guid of a movie to search for
+        Returns PlexServer object
+        """
         if self.debug:
             print 'Connecting to Plex: token auth'
         plex = PlexServer(plex_config.PLEX_SERVER_URL, plex_config.PLEX_TOKEN)
@@ -101,6 +116,7 @@ class PlexSearch(object):
 
 
 class OmdbSearch(object):
+    """Queries OMDb.org for movie information using an IMDb guid."""
     def __init__(self, **kwargs):
         self.debug = kwargs.get('debug', False)
         self._omdb_key = plex_config.OMDB_API_KEY

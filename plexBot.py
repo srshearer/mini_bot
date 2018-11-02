@@ -44,6 +44,9 @@ def parse_arguments():
 
 
 class MovieNotification(object):
+    """Creates an object for searching a Plex server and OMDb for relevant info
+    about a given movie and formatting a json notification for Slack.
+    """
     def __init__(self, **kwargs):
         self.debug = kwargs.get('debug', False)
         self.imdb_guid = None
@@ -54,6 +57,12 @@ class MovieNotification(object):
         self._omdb_result = None
 
     def search(self, imdb_guid):
+        """Searches Plex via PlexAPI and OMDb for a movie using an IMDb guid.
+        Requires:
+            - str(imdb_guid)
+        Returns:
+            - json(rich slack notification)
+        """
         self.imdb_guid = imdb_guid
         self._plex_result = self._plex_helper.movie_search(imdb_guid)
         self._omdb_result = self._get_omdb_info(imdb_guid)
@@ -61,6 +70,13 @@ class MovieNotification(object):
         return self.json_attachment
 
     def _get_omdb_info(self, imdb_guid):
+        """Searches Plex via PlexAPI and OMDb via a query for a movie using an
+        IMDb guid.
+        Requires:
+            - str(imdb_guid)
+        Returns:
+            - json.loads(OMDb query data)
+        """
         omdb_result = self._omdb_helper.search(imdb_guid)
         _omdb_info_data = json.loads(omdb_result)
 
@@ -68,6 +84,9 @@ class MovieNotification(object):
 
     @property
     def json_attachment(self):
+        """Formatted json attachment suitable for sending a rich
+        Slack notification.
+        """
         quality = pu.get_video_quality(self._plex_result)
         filesize = pu.get_filesize(self._plex_result)
 
@@ -104,6 +123,8 @@ class MovieNotification(object):
 
 
 def get_new_movie_json(imdb_guid, **kwargs):
+    """Search for a movie via IMDb guid and
+    assemble a json attachment for Slack"""
     movie_searcher = MovieNotification(**kwargs)
     movie_data = movie_searcher.search(imdb_guid)
 
@@ -111,10 +132,14 @@ def get_new_movie_json(imdb_guid, **kwargs):
 
 
 def send_movie_notification(args):
+    """Send a rich movie notification to Slack using supplied arguments.
+    Requires:
+        - str(imdb_guid)
+    """
     movie_json = get_new_movie_json(
         imdb_guid=args.imdb_guid,
         debug=args.debug,
-        con_type=config.PLEX_CON_TYPE
+        auth_type=config.PLEX_AUTH_TYPE
     )
 
     slack = SlackSender(

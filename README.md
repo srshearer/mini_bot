@@ -53,7 +53,8 @@ Before this will work, you will need to do the following…
 5. Install PlexAPI in order to interact with your Plex server. _(https://pypi.python.org/pypi/PlexAPI)_
 
 *Recommended*
-I would recommend that you install and use PlexPy on your Plex Server. This will not only give you a great web interface and statistics for your server and content, but will also allow you to monitor your server for new content and launch plexBot.py. Alternatively, you could use PlexPy to entirely circumvent the entire need of this script and just send Slack notifications via their built-in tools.
+- I would recommend that you install and use Tautulli on your Plex Server. This will not only give you a great web interface and statistics for your server and content, but will also allow you to monitor your server for new content and launch plexBot.py. Alternatively, you could use Tautulli to entirely circumvent the need of this script and just send Slack notifications via their built-in tools.
+- Token based Plex authentication is set up by default but can be changed in plex_config.py. User based authentication is much slower than token based auth. 
 
 *Required arguments:*
 `  -i, --guid '<IMDb guid>'` _The IMDb guid is required to look up the movie in your Plex library and to look up additional info from OMDb._  
