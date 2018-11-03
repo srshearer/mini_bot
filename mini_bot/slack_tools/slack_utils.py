@@ -1,19 +1,10 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 
-"""
-Version: 3.0
-About:
-    Utilities for interacting with Slack.
-"""
 from __future__ import print_function, unicode_literals, absolute_import
-import sys
-import os.path
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..', '..')))
 import json
 import requests
-from pyBots.slackBot import slack_config
+from mini_bot.slack_tools import slack_config
 
 
 class SlackException(Exception):

@@ -2,22 +2,13 @@
 # encoding: utf-8
 
 from __future__ import print_function, unicode_literals, absolute_import
-import sys
 import re
+import sys
 import math
 import requests
-from pyBots.plexBot import plex_config
+from mini_bot.plex_tools import plex_config
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
-
-"""
-Version: 2.0
-Steven Shearer / srshearer@gmail.com
-
-About:
-    Utilities for interacting with a Plex server and OMDb to extract information
-    about movies.
-"""
 
 
 class PlexException(Exception):
@@ -66,6 +57,7 @@ class PlexSearch(object):
         """
         if self.debug:
             print('Connecting to Plex: user auth')
+
         account = MyPlexAccount(
             plex_config.PLEX_USERNAME, plex_config.PLEX_PASSWORD)
         plex = account.resource(plex_config.PLEX_SERVER_NAME).connect()
@@ -80,7 +72,13 @@ class PlexSearch(object):
         """
         if self.debug:
             print('Connecting to Plex: token auth')
-        plex = PlexServer(plex_config.PLEX_SERVER_URL, plex_config.PLEX_TOKEN)
+        try:
+            plex = PlexServer(plex_config.PLEX_SERVER_URL, plex_config.PLEX_TOKEN)
+        except Exception as e:
+            raise PlexException(
+                'Failed to connect to Plex server: {} \n{}'.format(
+                    plex_config.PLEX_SERVER_URL, e)
+            )
 
         return plex
 

@@ -4,3 +4,5 @@ env
 secrets.py
 *config.py
 .idea
+/dist/
+/*.egg-info

@@ -1,25 +1,11 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
-import sys
-import os.path
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..', '..')))
 import json
 import argparse
-from pyBots.plexBot import plexUtils as pu
-from pyBots.plexBot import plex_config as config
-from pyBots.slackBot.slackUtils import SlackSender, text_color
-
-"""
-Version: 2.0
-Steven Shearer / srshearer@gmail.com
-
-About:
-    Utilizes plexUtils to search for movies in Plex and OMDb, extract
-    information about the movie, and format it into json to send as
-    a rich Slack message/
-"""
+from mini_bot.plex_tools import plex_config
+from mini_bot.plex_tools import plex_utils as pu
+from mini_bot.slack_tools.slack_utils import SlackSender, text_color
 
 
 def parse_arguments():
@@ -136,7 +122,7 @@ def send_movie_notification(args):
     movie_json = get_new_movie_json(
         imdb_guid=args.imdb_guid,
         debug=args.debug,
-        auth_type=config.PLEX_AUTH_TYPE
+        auth_type=plex_config.PLEX_AUTH_TYPE
     )
 
     slack = SlackSender(

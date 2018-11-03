@@ -1,19 +1,10 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 
-"""
-Version: 3.0
-About:
-    Formats a given message into json to send to Slack via webhooks.
-"""
 from __future__ import print_function, unicode_literals, absolute_import
-import sys
-import os.path
 import argparse
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..', '..')))
-from pyBots.slackBot import slack_config
-from pyBots.slackBot.slackUtils import SlackSender, SlackException, text_color
+from mini_bot.slack_tools import slack_config
+from mini_bot.slack_tools import slack_utils as su
 
 
 def parse_arguments():
@@ -45,22 +36,22 @@ def parse_arguments():
 
 def set_message(args):
     if not args.message:
-        raise SlackException('No message given')
+        raise su.SlackException('No message given')
 
     if args.message.startswith('up'):
         title = 'Announcement: Server is up'
         message = 'The server is back up!'
-        color = text_color('good')
+        color = su.text_color('good')
     elif args.message.startswith('down '):
         downtime = ' '.join(args.message.split(' ')[1:])
         title = 'Announcement: Server going down'
         message = 'The server is going down for maintenance.\n' \
                   'Exepected downtime is about {}.'.format(downtime)
-        color = text_color('warn')
+        color = su.text_color('warn')
     else:
         title = args.title or slack_config.DEFAULT_TITLE
         message = args.message
-        color = args.color or text_color('info')
+        color = args.color or su.text_color('info')
 
     json_attachments = {
         "fallback": title,
@@ -74,7 +65,7 @@ def set_message(args):
 
 def send_slack_message(args):
     json = set_message(args)
-    slack = SlackSender(
+    slack = su.SlackSender(
         json_attachments=json, room=args.room,
         debug=args.debug, dryrun=args.dryrun)
     slack.send()
