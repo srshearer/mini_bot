@@ -6,3 +6,4 @@ secrets.py
 .idea
 /dist/
 /*.egg-info
+build
