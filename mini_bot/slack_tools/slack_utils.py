@@ -13,10 +13,10 @@ class SlackException(Exception):
 
 
 class SlackSender(object):
-    def __init__(self, room=None, json_attachments=None, **kwargs):
+    def __init__(self, json_attachments=None, **kwargs):
         self.debug = kwargs.get('debug', False)
         self.dryrun = kwargs.get('dryrun', False)
-        self.room = room
+        self.room = kwargs.get('room', None)
         self.color = kwargs.get('color', text_color('info'))
         self._set_debug_state()
         self._room = self._set_room()
@@ -126,6 +126,7 @@ def text_color(requested_color):
         'orange': 'warning',
         'red': 'danger',
         'purple': '#764FA5',
+        'blue': '#439FE0'
     }
 
     text_color_dict = {
@@ -138,6 +139,7 @@ def text_color(requested_color):
         'danger': colors['red'],
         'red': colors['red'],
         'purple': colors['purple'],
+        'blue': colors['blue'],
     }
 
     if requested_color.lower() in map(unicode.lower, text_color_dict):

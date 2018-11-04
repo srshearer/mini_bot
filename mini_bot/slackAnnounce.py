@@ -34,9 +34,13 @@ def parse_arguments():
     return args
 
 
-def set_message(args):
+def set_message(args, **kwargs):
+    _message = args.message or kwargs.get('message') or None
+    _title = args.title or kwargs.get('title') or None
+    _color = args.color or kwargs.get('color') or None
+
     if not args.message:
-        raise su.SlackException('No message given')
+        raise su.SlackException('No message given: {}'.format(args))
 
     if args.message.startswith('up'):
         title = 'Announcement: Server is up'
@@ -48,6 +52,12 @@ def set_message(args):
         message = 'The server is going down for maintenance.\n' \
                   'Exepected downtime is about {}.'.format(downtime)
         color = su.text_color('warn')
+    elif _message.startswith('serverupdate'):
+        _m_list = _message.split(" ")
+        software = _m_list[1]
+        title = '{} Update Available'.format(software)
+        message = ' '.join(_m_list[2:]).replace("\\n", "\n'")
+        color = su.text_color('blue')
     else:
         title = args.title or slack_config.DEFAULT_TITLE
         message = args.message
