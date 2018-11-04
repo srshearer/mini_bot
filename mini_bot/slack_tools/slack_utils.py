@@ -76,7 +76,18 @@ class SlackSender(object):
 
         return webhook_url
 
-    def set_simple_message(self, text='', **kwargs):
+    def set_simple_message(self, message='', **kwargs):
+        """Sets formatted json to use in sending a Slack notification using only
+        a provided message.
+        Requires:
+            - str(message): The body text of the message
+        Optional:
+            - str(title): The title of the message
+            - str(color): The color of the message
+            - str(fallback): The fallback text. Same as title by default
+        Returns:
+            - json(self.json_attachments): The formatted json set in the object
+        """
         title = kwargs.get('title', slack_config.DEFAULT_TITLE)
         color = kwargs.get('color', self.color)
         fallback = kwargs.get('fallback', None)
@@ -85,10 +96,17 @@ class SlackSender(object):
             "fallback": fallback or title,
             "color": color,
             "title": title,
-            "text": text,
+            "text": message,
         }
+        return self.json_attachments
 
     def send(self):
+        """Send the Slack notification with the current json_attachments.
+        This will update the debug state, room, and webhook before sending.
+        """
+        self._set_debug_state()
+        self._set_room()
+        self._set_webhook()
         self._json_payload = {
             "channel": self._room,
             "username": self._user,
