@@ -56,7 +56,7 @@ def set_message(args, **kwargs):
         _m_list = _message.split(" ")
         software = _m_list[1]
         title = '{} Update Available'.format(software)
-        message = ' '.join(_m_list[2:]).replace("\\n", "\n'")
+        message = ' '.join(_m_list[2:]).replace("\\n", "\n")
         color = su.text_color('blue')
     else:
         title = args.title or slack_config.DEFAULT_TITLE
