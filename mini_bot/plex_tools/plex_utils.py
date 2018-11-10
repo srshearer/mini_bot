@@ -27,8 +27,10 @@ class PlexSearch(object):
         - auth_type (user or token): choose authentication method
     """
     def __init__(self, **kwargs):
-        self.auth_type = kwargs.get('auth_type', plex_config.PLEX_AUTH_TYPE)
+        self.kwargs = kwargs
         self.debug = kwargs.get('debug', False)
+        self.auth_type = kwargs.get('auth_type', plex_config.PLEX_AUTH_TYPE)
+        self.plex_server = kwargs.get('server', plex_config.PLEX_SERVER_URL)
         self.plex = self._get_server_instance()
 
     def _get_server_instance(self):
@@ -44,7 +46,7 @@ class PlexSearch(object):
                 'Invalid Plex connection type: {}'.format(self.auth_type))
 
         if self.debug:
-            print('Connected')
+            print('Connected: {}'.format(self.plex_server))
 
         return plex
 
@@ -60,7 +62,7 @@ class PlexSearch(object):
 
         account = MyPlexAccount(
             plex_config.PLEX_USERNAME, plex_config.PLEX_PASSWORD)
-        plex = account.resource(plex_config.PLEX_SERVER_NAME).connect()
+        plex = account.resource(self.plex_server).connect()
 
         return plex
 
@@ -77,7 +79,7 @@ class PlexSearch(object):
         except Exception as e:
             raise PlexException(
                 'Failed to connect to Plex server: {} \n{}'.format(
-                    plex_config.PLEX_SERVER_URL, e)
+                    self.plex_server, e)
             )
 
         return plex
@@ -107,6 +109,10 @@ class PlexSearch(object):
             print('Found: {} ({})'.format(video.title, video.year))
 
         return video
+
+    def recently_added(self):
+        movies = self.plex.library.recentlyAdded()
+        return movies
 
 
 class OmdbSearch(object):
