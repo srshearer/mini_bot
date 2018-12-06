@@ -6,6 +6,7 @@ import json
 import os.path
 import argparse
 import requests
+import threading
 from flask import Flask, request, g
 from mini_bot.plex_tools import plex_config
 from mini_bot.plex_tools import plex_utils as plx_util
@@ -15,20 +16,12 @@ from mini_bot.slack_tools.slack_utils import SlackSender
 """
 Setup script:
 1. Install requirements
-2. Set up config file? 
+2. Set up config file
    - ssh keys
    - plex token
    - local temp path
    - local final path
 
-Notify for new local movies
-- Send IMDb id and local file path to endpoint
-
-Pull remote movies
-✓ 1. Listen for notifications. Notifications include imdb id and path
-✓ 2. Check local plex library for imdb id. Yes: Done. No: continue…
-✓ 3. Notify, then initiate transfer from remote library to local temp directory
-✓ 4. Once complete, notify and move to final location
 """
 
 
@@ -99,7 +92,8 @@ class PlexSyncer(object):
                 self.imdb_guid, self.title_year, self.rem_path)
             self.notify(message)
 
-            print('rem_path: {} / movie_dir: {}'.format(self.rem_path, self.movie_dir)) # ToDo: Remove debug line
+            print('rem_path: {} / movie_dir: {}'.format(
+                self.rem_path, self.movie_dir)) # ToDo: Remove debug line
 
             file_path = srv_util.get_file(self.rem_path, self.movie_dir)
             if not file_path:
@@ -127,29 +121,6 @@ def omdb_q(imdb_guid):
         status = 404
 
     return msg, status
-
-
-# def after_this_request(func):
-#     if not hasattr(g, 'call_after_request'):
-#         g.call_after_request = []
-#     g.call_after_request.append(func)
-#     return func
-#
-#
-# @app.after_request
-# def per_request_callbacks(response):
-#     for func in getattr(g, 'call_after_request', ()):
-#         response = func(response)
-#     return response
-#
-#
-# def invalidate_username_cache():
-#     @after_this_request
-#     def delete_username_cookie(response):
-#         response.delete_cookie('username')
-#         return response
-
-import threading
 
 
 @app.route('/new_movie/', methods=['POST'])
