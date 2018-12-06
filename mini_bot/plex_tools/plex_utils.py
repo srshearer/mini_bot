@@ -102,8 +102,12 @@ class PlexSearch(object):
         try:
             video = found_movies[0]
         except IndexError:
-            print('Error: Could not locate movie: {}'.format(imdb_guid))
-            sys.exit(1)
+            # raise PlexException(
+            # print(
+            #     'Error: Could not locate movie in Plex: {} \n{}'.format(
+            #         imdb_guid, self.plex_server)
+            # )
+            return None
 
         if self.debug:
             print('Found: {} ({})'.format(video.title, video.year))

@@ -64,7 +64,7 @@ class SlackSender(object):
         return _json_attachments
 
     def _set_webhook(self):
-        if self._room == 'me':
+        if self.room == 'me':
             webhook_url = slack_config.SLACK_WEBHOOK_URL_ME
             self._room = None
         else:

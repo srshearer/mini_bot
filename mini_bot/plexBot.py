@@ -47,8 +47,8 @@ class MovieNotification(object):
             - json(rich slack notification)
         """
         self.imdb_guid = imdb_guid
-        self._plex_result = self._plex_helper.movie_search(imdb_guid)
         self._omdb_result = self._get_omdb_info(imdb_guid)
+        self._plex_result = self._plex_helper.movie_search(imdb_guid)
 
         return self.json_attachment
 
