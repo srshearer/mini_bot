@@ -13,6 +13,8 @@ setuptools.setup(
         'PlexAPI',
         'requests',
         'argparse',
+        'flask',
+        'paramiko',
     ],
     license='MIT',
     long_description=long_description,
