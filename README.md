@@ -1,41 +1,6 @@
 # pyBots  
 Python tools for sending messages to Slack and interfacing with Plex. Created for my personal use.
 
-## slackAnnounce.py  
-
-*Description:*
-
-This script is for sending notification messages to Slack via webhooks. Send arbitrary messages as your bot user, send expected downtime, or server up notifications.
-
-
-Before this will work, you will need to do the following…
-1. Get a Slack webhook url. _(More info at: https://api.slack.com/incoming-webhooks)_
-2. Rename _slack_config_example.py_ –> _slack_config.py_
-3. Add the following information to _slack_config.py_
-    - Your Slack webhook url
-    - Slack webhook url to send messages to yourself
-    - The default username you want to send messages as
-    - Slack channel to send messages to by default
-    - Slack channel to send messages to when you are developing/testing/debugging
-4. Verify that _.gitignore_ lists _*config.py_ as an ignored file and that slack_config.py will not be pushed to git. This should already be set up properly for you.
-  
-
-*Required arguments:*
-
-`  -m, --message '<message>'` _Message to send to the channel._
-- `'up'` _will send a pre-formatted message stating the server is back up. Default color: (good/green)_
-- `'down <number> <time unit>'` _(ex.'down 20 min') will send a pre-formatted message that the server will be going down for maintenance for that amount of time. Default color: (warn/yellow)_
-- Any other message will be sent as-is. Default color: (info/gray)
-  
-*Optional arguments:*
-
-`  -h, --help`  _Show help message and exit_  
-`  -c, --color <color>`  _Color for message. Color Options: gray/info (default), green/good, yellow/warn, red/danger, purple_  
-`  -d, --debug`  _Enable debug mode. Send message to test channel and show json output in console._  
-`  --dry`  _Enable dryrun mode. Message will not be sent._  
-`  -r, --room <room>`  _Slack channel room to send the message to._  
-`  -t, --title <title>`  _Set a message title._
-
 
 ## plexBot.py
 
@@ -63,3 +28,31 @@ Before this will work, you will need to do the following…
 `  -h, --help`  _Show help message and exit_  
 `  -d, --debug`  _Enable debug mode. Send message to test channel and show json output in console._  
 `  --dry`  _Enable dryrun mode. Message will not be sent._  
+
+
+
+## plexSyncer.py
+
+*Description:*
+plexSyncer runs a flask server which listens for at an endpoint for an imdb guid and a filepath. When the endpoint it hit with this information, the file will be transferred to the local server if it is not already in a local Plex library. 
+
+Before this will work, you will need to do the following…
+1. Get _slackAnnounce.py_ up and running. _(https://github.com/srshearer/slack-announce)_
+2. Rename _config_example.py_ –> _config.py_
+3. Add the required infromation to _config.py_
+4. Verify that _.gitignore_ lists _*config.py_ as an ignored file and that plex_config.py will not be pushed to git. This should already be set up properly for you.
+5. Run Setup.py to install the script and its dependencies
+
+*Recommended*
+- I would recommend that you install and use Tautulli on your Plex Server. This will not only give you a great web interface and statistics for your server and content, but will also allow you to monitor your server for new content and launch plexBot.py. Alternatively, you could use Tautulli to entirely circumvent the need of this script and just send Slack notifications via their built-in tools.
+- Token based Plex authentication is set up by default but can be changed in config.py. User based authentication is much slower than token based auth. 
+
+*Required arguments:*
+`  -i, --guid '<IMDb guid>'` _The IMDb guid is required to look up the movie in your Plex library and to look up additional info from OMDb._  
+
+*Optional arguments:*  
+`  -h, --help`  _Show help message and exit_  
+`  -d, --debug`  _Enable debug mode. Send message to test channel and show json output in console._  
+`  -n`  _Notify remote server of new movie. Note that this requires both `-i` and `-p` be set__  
+`  -i`  _IMdB guid of the movie_  
+`  -p`  _Path to local movie file_  
