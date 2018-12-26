@@ -2,11 +2,13 @@
 # encoding: utf-8
 
 from __future__ import print_function, unicode_literals, absolute_import
-import re
 import sys
-import math
+import os.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import re
 import requests
-from mini_bot.plex_tools import plex_config
+from minibot.utilities import config
+from minibot.utilities import utils
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 
@@ -29,8 +31,8 @@ class PlexSearch(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.debug = kwargs.get('debug', False)
-        self.auth_type = kwargs.get('auth_type', plex_config.PLEX_AUTH_TYPE)
-        self.plex_server = kwargs.get('server', plex_config.PLEX_SERVER_URL)
+        self.auth_type = kwargs.get('auth_type', config.PLEX_AUTH_TYPE)
+        self.plex_server = kwargs.get('server', config.PLEX_SERVER_URL)
         self.plex = self._get_server_instance()
 
     def _get_server_instance(self):
@@ -61,7 +63,7 @@ class PlexSearch(object):
             print('Connecting to Plex: user auth')
 
         account = MyPlexAccount(
-            plex_config.PLEX_USERNAME, plex_config.PLEX_PASSWORD)
+            config.PLEX_USERNAME, config.PLEX_PASSWORD)
         plex = account.resource(self.plex_server).connect()
 
         return plex
@@ -75,7 +77,7 @@ class PlexSearch(object):
         if self.debug:
             print('Connecting to Plex: token auth')
         try:
-            plex = PlexServer(plex_config.PLEX_SERVER_URL, plex_config.PLEX_TOKEN)
+            plex = PlexServer(config.PLEX_SERVER_URL, config.PLEX_TOKEN)
         except Exception as e:
             raise PlexException(
                 'Failed to connect to Plex server: {} \n{}'.format(
@@ -102,7 +104,6 @@ class PlexSearch(object):
         try:
             video = found_movies[0]
         except IndexError:
-            # raise PlexException(
             # print(
             #     'Error: Could not locate movie in Plex: {} \n{}'.format(
             #         imdb_guid, self.plex_server)
@@ -123,7 +124,7 @@ class OmdbSearch(object):
     """Queries OMDb.org for movie information using an IMDb guid."""
     def __init__(self, **kwargs):
         self.debug = kwargs.get('debug', False)
-        self._omdb_key = plex_config.OMDB_API_KEY
+        self._omdb_key = config.OMDB_API_KEY
 
     def _get_omdb_url(self, imdb_guid):
         omdb_url = 'http://www.omdbapi.com/?i={}&plot=short&apikey={}'.format(
@@ -160,16 +161,6 @@ class OmdbSearch(object):
             )
         else:
             return response.text
-
-
-def conv_millisec_to_min(milliseconds):
-    """Requires int(milliseconds) and converts it to minutes.
-    Returns: string(duration) (i.e. 117 min)
-    """
-    s, remainder = divmod(milliseconds, 1000)
-    m, s = divmod(s, 60)
-    minute_string = '{} min'.format(m)
-    return minute_string
 
 
 def get_video_quality(movie):
@@ -214,25 +205,8 @@ def get_filesize(movie):
     for media_elem in media_items:
         for media_part in media_elem.parts:
             raw_filesize += media_part.size
-    filesize = convert_file_size(raw_filesize)
+    filesize = utils.convert_file_size(raw_filesize)
     return filesize
-
-
-def convert_file_size(size_bytes):
-    """Converts file size in bytes as to human readable format.
-    Requires:
-        - int(bytes)
-    Returns:
-        - string (i.e. 3.21 GB)
-    """
-    if size_bytes == 0:
-        return '0B'
-    size_name = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB')
-    i = int(math.floor(math.log(size_bytes, 1024)))
-    p = math.pow(1024, i)
-    s = round(size_bytes / p, 2)
-
-    return '{} {}'.format(s, size_name[i])
 
 
 def get_clean_imdb_guid(guid):

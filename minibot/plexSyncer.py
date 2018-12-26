@@ -2,27 +2,18 @@
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
 import sys
+import os.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
 import os.path
 import argparse
 import requests
 import threading
-from flask import Flask, request, g
-from mini_bot.plex_tools import plex_config
-from mini_bot.plex_tools import plex_utils as plx_util
-from mini_bot.plex_tools import server_utils as srv_util
-from mini_bot.slack_tools.slack_utils import SlackSender
-
-"""
-Setup script:
-1. Install requirements
-2. Set up config file
-   - ssh keys
-   - plex token
-   - local temp path
-   - local final path
-
-"""
+from flask import Flask, request #, g
+from slackannounce.utils import SlackSender
+from minibot.utilities import config
+from minibot.utilities import plex_utils
+from minibot.utilities import server_utils
 
 
 app = Flask(__name__)
@@ -54,14 +45,14 @@ class PlexSyncer(object):
         self.imdb_guid = kwargs.get('imdb_guid', None)
         self.rem_path = kwargs.get('rem_path', None)
         self.title_year = kwargs.get('title', None)
-        self.movie_dir = os.path.expanduser(plex_config.NEW_MOVIE_PATH)
+        self.movie_dir = os.path.expanduser(config.NEW_MOVIE_PATH)
         self.plex_local = None
 
     def connect_plex(self):
-        self.plex_local = plx_util.PlexSearch(
+        self.plex_local = plex_utils.PlexSearch(
             debug=self.debug,
-            auth_type=plex_config.PLEX_AUTH_TYPE,
-            server=plex_config.PLEX_SERVER_URL
+            auth_type=config.PLEX_AUTH_TYPE,
+            server=config.PLEX_SERVER_URL
         )
         return
 
@@ -69,7 +60,7 @@ class PlexSyncer(object):
         result = self.plex_local.movie_search(self.imdb_guid)
 
         try:
-            if plx_util.get_clean_imdb_guid(result.guid) == self.imdb_guid:
+            if plex_utils.get_clean_imdb_guid(result.guid) == self.imdb_guid:
                 return True
         except AttributeError:
             pass
@@ -95,7 +86,7 @@ class PlexSyncer(object):
             print('rem_path: {} / movie_dir: {}'.format(
                 self.rem_path, self.movie_dir)) # ToDo: Remove debug line
 
-            file_path = srv_util.get_file(self.rem_path, self.movie_dir)
+            file_path = server_utils.get_file(self.rem_path, self.movie_dir)
             if not file_path:
                 message = 'Transfer failed: {}'.format(file_path)
             else:
@@ -107,7 +98,7 @@ class PlexSyncer(object):
 
 
 def omdb_q(imdb_guid):
-    sercher = plx_util.OmdbSearch()
+    sercher = plex_utils.OmdbSearch()
     result = json.loads(sercher.search(imdb_guid=imdb_guid))
 
     try:
@@ -160,9 +151,15 @@ def send_new_movie_notification(imdb_guid, path):
             'path': '{}'.format(path)
         }
     )
-    url = plex_config.REMOTE_LISTENER + '/new_movie/'
-    r = requests.post(
-        url, movie_data, headers={'Content-Type': 'application/json'})
+    url = config.REMOTE_LISTENER + '/new_movie/'
+
+    try:
+        r = requests.post(
+            url, movie_data, headers={'Content-Type': 'application/json'})
+    except requests.exceptions.ConnectionError:
+        print('Response: [404] Server not found')
+        sys.exit(1)
+
     print('Response: [{}] {}'.format(r.status_code, r.text))
 
 
