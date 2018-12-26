@@ -9,7 +9,7 @@ import argparse
 from minibot.utilities import config
 from minibot.utilities import plexsyncer
 from minibot.utilities import plexutils
-from minibot.utilities.slackutils import SlackSender, text_color
+from slackannounce.utils import SlackSender, text_color
 
 
 def parse_arguments():
