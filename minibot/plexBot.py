@@ -7,9 +7,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import json
 import argparse
 from minibot.utilities import config
-from minibot.utilities import plex_syncer
-from minibot.utilities import plex_utils
-from minibot.utilities.slack_utils import SlackSender, text_color
+from minibot.utilities import plexsyncer
+from minibot.utilities import plexutils
+from minibot.utilities.slackutils import SlackSender, text_color
 
 
 def parse_arguments():
@@ -25,7 +25,7 @@ def parse_arguments():
     parser.add_argument('-i', '--guid', dest='imdb_guid', metavar='<IMDb guid>',
                         required=False, action='store',
                         help='Find movie by IMDb guid.')
-    parser.add_argument('-l', '--listen', dest='listen',
+    parser.add_argument('-l', '--listen', dest='sync_listen',
                         required=False, action='store_true',
                         help='Run flask server listening for new movies at '
                              'endpoint.')
@@ -49,9 +49,9 @@ class MovieNotification(object):
         self.debug = kwargs.get('debug', False)
         self.imdb_guid = None
         self.color = text_color('purple')
-        self._plex_helper = plex_utils.PlexSearch(**kwargs)
+        self._plex_helper = plexutils.PlexSearch(**kwargs)
         self._plex_result = None
-        self._omdb_helper = plex_utils.OmdbSearch(**kwargs)
+        self._omdb_helper = plexutils.OmdbSearch(**kwargs)
         self._omdb_result = None
 
     def search(self, imdb_guid):
@@ -85,8 +85,8 @@ class MovieNotification(object):
         """Formatted json attachment suitable for sending a rich
         Slack notification.
         """
-        quality = plex_utils.get_video_quality(self._plex_result)
-        filesize = plex_utils.get_filesize(self._plex_result)
+        quality = plexutils.get_video_quality(self._plex_result)
+        filesize = plexutils.get_filesize(self._plex_result)
 
         plot = self._omdb_result['Plot']
         poster_link = self._omdb_result['Poster']
@@ -152,10 +152,10 @@ def send_new_movie_slack_notification(args):
 def main():
     args = parse_arguments()
 
-    if args.listen:
-        plex_syncer.run_server()
+    if args.sync_listen:
+        plexsyncer.run_server()
     elif args.sync_notify:
-        plex_syncer.send_new_movie_notification(
+        plexsyncer.send_new_movie_notification(
                 imdb_guid=args.imdb_guid, path=args.path)
     elif args.guid:
         send_new_movie_slack_notification(args)
