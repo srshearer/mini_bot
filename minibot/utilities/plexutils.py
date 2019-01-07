@@ -86,34 +86,33 @@ class PlexSearch(object):
 
         return plex
 
-    def movie_search(self, imdb_guid):
-        """Uses PlexAPI to search for a movie via IMDb guid.
-        Requires:
-            - IMDb guid of a movie to search for
-        Returns the first result video object.
+    def movie_search(self, guid=None, title=None, year=None):
+        """Uses PlexAPI to search for a movie via IMDb guid, title, and/or year.
+        Requires one or more:
+            - Movie guid from IMDb (str)
+            - Movie title (str)
+            - Movie year (str): Only used if title is given
+        Returns: A list of PlexAPI video objects (list)
         """
-        movies = self.plex.library.section('Movies')
         found_movies = []
+        if not guid and not title:
+            print('Error: plexutils.movie_search() requires guid or title.')
+            return found_movies
+
+        movies = self.plex.library.section('Movies')
 
         if self.debug:
-            print('Searching Plex: {}'.format(imdb_guid))
+            print('Searching Plex: {}'.format(guid))
 
-        for result in movies.search(guid=imdb_guid):
-            found_movies.append(result)
+        if guid:
+            for m in movies.search(guid=guid):
+                found_movies.append(m)
+        if title:
+            for m in movies.search(title=title, year=year):
+                if m not in found_movies:
+                    found_movies.append(m)
 
-        try:
-            video = found_movies[0]
-        except IndexError:
-            # print(
-            #     'Error: Could not locate movie in Plex: {} \n{}'.format(
-            #         imdb_guid, self.plex_server)
-            # )
-            return None
-
-        if self.debug:
-            print('Found: {} ({})'.format(video.title, video.year))
-
-        return video
+        return found_movies
 
     def recently_added(self):
         movies = self.plex.library.recentlyAdded()
@@ -134,8 +133,9 @@ class OmdbSearch(object):
         return omdb_url
 
     def search(self, imdb_guid):
-        """Generic function to query a url via requests.get.
-        Requires url to get query
+        """Builds a query url for OMDb using a provided IMDb guid and returns
+        the response.
+        Requires: imdb_guid(str) -
         Returns a json response.
         """
         if self.debug:
@@ -163,20 +163,21 @@ class OmdbSearch(object):
             return response.text
 
 
-def get_video_quality(movie):
+def get_video_quality(video):
     """Takes a media object and loops through the media element to return the
-    video quality formatted as a string: 1080p, 720p, 480p, SD, etc…
+    video quality formatted as a string.
     Requires:
         - PlexAPI video object
-    Returns: str(movie quality)
+    Returns: movie quality (str) - i.e. 1080p, 720p, 480p, SD
     """
-    media_items = movie.media
+    media_items = video.media
     quality = 'SD'
+
     for elem in media_items:
         raw_quality = str(elem.videoResolution)
         quality = format_quality(raw_quality)
-    if quality:
-        return quality
+
+    return quality
 
 
 def format_quality(raw_quality):

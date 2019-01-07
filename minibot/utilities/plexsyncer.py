@@ -5,22 +5,25 @@ import sys
 import os.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
-import argparse
 import requests
 import threading
 from flask import Flask, request #, g
-from minibot.utilities import config
-from minibot.utilities import plexutils
-from minibot.utilities import serverutils
+from mini_bot.minibot.utilities import config
+from mini_bot.minibot.utilities import utils
+from mini_bot.minibot.utilities import plexutils
+from mini_bot.minibot.utilities import serverutils
 from slackannounce.utils import SlackSender
 
 
+logger = utils.Logger(file_path=os.path.abspath('./syncer.log'))
+
+
 class PlexSyncer(object):
-    def __init__(self, **kwargs):
+    def __init__(self, imdb_guid=None, rem_path=None, debug=False, **kwargs):
         self.kwargs = kwargs
-        self.debug = kwargs.get('debug', False)
-        self.imdb_guid = kwargs.get('imdb_guid', None)
-        self.rem_path = kwargs.get('rem_path', None)
+        self.debug = debug
+        self.imdb_guid = imdb_guid
+        self.rem_path = rem_path
         self.title_year = kwargs.get('title', None)
         self.movie_dir = os.path.expanduser(config.NEW_MOVIE_PATH)
         self.plex_local = None
@@ -34,14 +37,26 @@ class PlexSyncer(object):
         return
 
     def in_local_plex(self):
-        result = self.plex_local.movie_search(self.imdb_guid)
+        self.title_year = omdb_q(self.imdb_guid)[0]
+        title, year = self.title_year.replace(')', '').split(' (')
+        print('[{}][{}][{}]'.format(self.imdb_guid, title, year))
+
+        if not self.plex_local:
+            self.connect_plex()
+
+        results = self.plex_local.movie_search(
+            guid=self.imdb_guid, title=title, year=year)
+
+        if not results:
+            return False
 
         try:
-            if plexutils.get_clean_imdb_guid(result.guid) == self.imdb_guid:
-                print('Found in local plex: {} ({})'.format(result.title, result.year)) # ToDo: Remove debug line
-                return True
-        except AttributeError:
-            pass
+            print('Found: ')  # ToDo: Remove debug line
+            for r in results:
+                print('\t{} - {} ({})'.format(
+                    plexutils.get_clean_imdb_guid(r.guid), r.title, r.year))
+            return True
+
         except Exception as e:
             print('Error checking local Plex server: {}'.format(e))
 
@@ -116,7 +131,8 @@ def run_server():
             syncer.run_sync_flow()
 
         r = request.get_json()
-        print(r)
+        logger.info('Request: {}'.format(r), stdout=True)
+
         imdb_guid = r["id"]
         path = r["path"]
         title, status = omdb_q(imdb_guid)

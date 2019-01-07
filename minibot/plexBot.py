@@ -62,10 +62,16 @@ class MovieNotification(object):
             - json(rich slack notification)
         """
         self.imdb_guid = imdb_guid
-        self._omdb_result = self._get_omdb_info(imdb_guid)
-        self._plex_result = self._plex_helper.movie_search(imdb_guid)
 
-        return self.json_attachment
+        self._omdb_result = self._get_omdb_info(imdb_guid)
+
+        plex_results = self._plex_helper.movie_search(imdb_guid)
+        if plex_results:
+            self._plex_result = plex_results[0]
+        else:
+            self._plex_result = None
+
+        return self._json_attachment
 
     def _get_omdb_info(self, imdb_guid):
         """Searches Plex via PlexAPI and OMDb via a query for a movie using an
@@ -81,7 +87,7 @@ class MovieNotification(object):
         return _omdb_info_data
 
     @property
-    def json_attachment(self):
+    def _json_attachment(self):
         """Formatted json attachment suitable for sending a rich
         Slack notification.
         """
@@ -150,17 +156,20 @@ def send_new_movie_slack_notification(args):
 
 
 def main():
-    args = parse_arguments()
+    syncer = plexsyncer.PlexSyncer(imdb_guid='tt0082971', debug=True)
+    print(syncer.in_local_plex())
 
-    if args.sync_listen:
-        plexsyncer.run_server()
-    elif args.sync_notify:
-        plexsyncer.send_new_movie_notification(
-                imdb_guid=args.imdb_guid, path=args.path)
-    elif args.guid:
-        send_new_movie_slack_notification(args)
-    else:
-        pass
+    # args = parse_arguments()
+
+    # if args.sync_listen:
+    #     plexsyncer.run_server()
+    # elif args.sync_notify:
+    #     plexsyncer.send_new_movie_notification(
+    #             imdb_guid=args.imdb_guid, path=args.path)
+    # elif args.guid:
+    #     send_new_movie_slack_notification(args)
+    # else:
+    #     pass
 
 
 if __name__ == '__main__':
