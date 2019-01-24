@@ -151,6 +151,9 @@ def send_new_movie_slack_notification(args):
         auth_type=config.PLEX_AUTH_TYPE
     )
 
+    logger.debug(movie_json)
+
+    logger.info('Sending to slack_announce')
     slack = SlackSender(
         json_attachments=movie_json,
         debug=args.debug,
@@ -164,11 +167,14 @@ def main():
     args = parse_arguments()
 
     if args.sync_listen:
+        logger.info('Starting listener')
         plexsyncer.run_server()
     elif args.sync_notify:
+        logger.info('Sending sync request')
         plexsyncer.send_new_movie_notification(
                 imdb_guid=args.imdb_guid, path=args.path)
     elif args.guid:
+        logger.info('Sending new movie notification')
         send_new_movie_slack_notification(args)
     else:
         pass

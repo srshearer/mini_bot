@@ -73,7 +73,7 @@ class Logger(object):
                     raise IOError('Could not create file: '
                                   '{} \n{}'.format(file_path, e))
 
-        print('Log file: {}'.format(os.path.abspath(file_path)))
+        # print('Log file: {}'.format(os.path.abspath(file_path)))
         return file_path
 
 

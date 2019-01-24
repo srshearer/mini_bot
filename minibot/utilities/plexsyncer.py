@@ -123,6 +123,7 @@ def send_new_movie_notification(imdb_guid, path):
         {'id': imdb_guid, 'path': path}
     )
     url = config.REMOTE_LISTENER + '/new_movie/'
+    logger.debug('Posting request to: {}'.format(url))
 
     try:
         r = requests.post(
@@ -168,4 +169,4 @@ def run_server():
 
         return msg, status
 
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
