@@ -10,12 +10,16 @@ from minibot.utilities import utils
 from minibot.utilities import config
 
 
+logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
+
+
 def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
 
     def status(complete, total):
         pct = 100 * complete / total
         c = utils.convert_file_size(complete)
         t = utils.convert_file_size(total)
+
         progress = '\tprogress: {}% [ {} / {} ]\033[F'.format(pct, c, t)
         sys.stdout.write('\r' + progress)
         time.sleep(1)
@@ -28,10 +32,9 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
     remote_server = config.REMOTE_FILE_SERVER
     remote_user = config.REMOTE_USER
 
-
-    print('Copying from remote server: {}@{}:\'{}\''.format(
+    logger.info('Copying from remote server: {}@{}:\'{}\''.format(
         remote_user, remote_server, rem_path))
-    print('Temp destination: {}'.format(tmp_dir_path))
+    logger.info('Temp destination: {}'.format(tmp_dir_path))
 
     local_pub_key = os.path.expanduser(os.path.join("~/.ssh", "id_rsa.pub"))
     ssh = paramiko.SSHClient()
@@ -52,12 +55,12 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
 
             sys.stdout.write('\n')
             msg = 'Transfer successful!'
-            print('{}'.format(msg))
+            logger.info('{}'.format(msg))
         except Exception as e:
             download_successful = False
             final_dest_dir_path = None
             msg = 'Error getting file: {} \n{}'.format(f, e)
-            print('{}'.format(msg))
+            logger.error('{}'.format(msg))
             sftp.close()
 
             if os.path.exists(os.path.join(tmp_dir_path, f)):
@@ -67,14 +70,14 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
         download_successful = False
         final_dest_dir_path = None
         msg = 'Error connecting to remote host: {}'.format(e)
-        print('{}'.format(msg))
+        logger.error('{}'.format(msg))
         ssh.close()
 
     final_file_path = None
     if download_successful:
         try:
             final_file_path = os.path.join(final_dest_dir_path, f)
-            print('Moving {} to {}'.format(f, final_dest_dir_path))
+            logger.info('Moving {} to {}'.format(f, final_dest_dir_path))
             os.path.dirname(final_dest_dir_path)
             if not os.path.isdir(final_dest_dir_path):
                 os.mkdir(final_dest_dir_path)
@@ -82,6 +85,6 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
             os.rename(os.path.join(tmp_dir_path, f), final_file_path)
 
         except OSError as e:
-            print('Failed to move file \n{}'.format(e))
+            logger.error('Failed to move file \n{}'.format(e))
 
     return {'path': final_file_path, 'msg': msg}

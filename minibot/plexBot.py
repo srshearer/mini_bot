@@ -3,13 +3,18 @@
 from __future__ import print_function, unicode_literals, absolute_import
 import sys
 import os.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
 import argparse
 from minibot.utilities import config
+from minibot.utilities import utils
 from minibot.utilities import plexsyncer
 from minibot.utilities import plexutils
 from slackannounce.utils import SlackSender, text_color
+
+
+logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
 
 
 def parse_arguments():
@@ -45,8 +50,8 @@ class MovieNotification(object):
     """Creates an object for searching a Plex server and OMDb for relevant info
     about a given movie and formatting a json notification for Slack.
     """
-    def __init__(self, **kwargs):
-        self.debug = kwargs.get('debug', False)
+    def __init__(self, debug=False, **kwargs):
+        self.debug = debug
         self.imdb_guid = None
         self.color = text_color('purple')
         self._plex_helper = plexutils.PlexSearch(**kwargs)
@@ -156,20 +161,17 @@ def send_new_movie_slack_notification(args):
 
 
 def main():
-    syncer = plexsyncer.PlexSyncer(imdb_guid='tt0082971', debug=True)
-    print(syncer.in_local_plex())
+    args = parse_arguments()
 
-    # args = parse_arguments()
-
-    # if args.sync_listen:
-    #     plexsyncer.run_server()
-    # elif args.sync_notify:
-    #     plexsyncer.send_new_movie_notification(
-    #             imdb_guid=args.imdb_guid, path=args.path)
-    # elif args.guid:
-    #     send_new_movie_slack_notification(args)
-    # else:
-    #     pass
+    if args.sync_listen:
+        plexsyncer.run_server()
+    elif args.sync_notify:
+        plexsyncer.send_new_movie_notification(
+                imdb_guid=args.imdb_guid, path=args.path)
+    elif args.guid:
+        send_new_movie_slack_notification(args)
+    else:
+        pass
 
 
 if __name__ == '__main__':

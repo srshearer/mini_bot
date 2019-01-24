@@ -13,6 +13,9 @@ from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 
 
+logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
+
+
 class PlexException(Exception):
     """Custom exception for Plex related failures."""
     pass
@@ -28,27 +31,33 @@ class PlexSearch(object):
     Optional kwargs:
         - auth_type (user or token): choose authentication method
     """
-    def __init__(self, **kwargs):
+    def __init__(self, debug=False, auth_type=config.PLEX_AUTH_TYPE,
+                 server=config.PLEX_SERVER_URL, **kwargs):
         self.kwargs = kwargs
-        self.debug = kwargs.get('debug', False)
-        self.auth_type = kwargs.get('auth_type', config.PLEX_AUTH_TYPE)
-        self.plex_server = kwargs.get('server', config.PLEX_SERVER_URL)
-        self.plex = self._get_server_instance()
+        self.debug = debug
+        self.auth_type = auth_type
+        self.plex_server = server
+        self.plex = None
 
-    def _get_server_instance(self):
+    def connect(self, auth_type=None):
         """
         Uses PlexAPI to instantiate a Plex server connection
         """
-        if self.auth_type == 'user':
+        if not auth_type:
+            auth_type = self.auth_type
+
+        if auth_type == 'user':
             plex = self._plex_account()
-        elif self.auth_type == 'token':
+        elif auth_type == 'token':
             plex = self._plex_token()
         else:
             raise PlexException(
                 'Invalid Plex connection type: {}'.format(self.auth_type))
 
+        self.plex = plex
+
         if self.debug:
-            print('Connected: {}'.format(self.plex_server))
+            logger.debug('Connected: {}'.format(self.plex_server))
 
         return plex
 
@@ -60,11 +69,20 @@ class PlexSearch(object):
         Returns MyPlexAccount object
         """
         if self.debug:
-            print('Connecting to Plex: user auth')
+            logger.debug('Connecting to Plex: user auth')
 
-        account = MyPlexAccount(
-            config.PLEX_USERNAME, config.PLEX_PASSWORD)
-        plex = account.resource(self.plex_server).connect()
+        if not config.PLEX_USERNAME or not config.PLEX_PASSWORD:
+            raise PlexException('Plex username or password missing from '
+                                'config.py: {}'.format(self.auth_type))
+
+        try:
+            account = MyPlexAccount(
+                config.PLEX_USERNAME, config.PLEX_PASSWORD)
+            plex = account.resource(self.plex_server).connect()
+        except Exception as e:
+            raise PlexException(
+                'Failed to connect to Plex server: {} \n{}'.format(
+                    self.plex_server, e))
 
         return plex
 
@@ -75,14 +93,18 @@ class PlexSearch(object):
         Returns PlexServer object
         """
         if self.debug:
-            print('Connecting to Plex: token auth')
+            logger.debug('Connecting to Plex: token auth')
+
+        if not config.PLEX_SERVER_URL or not config.PLEX_TOKEN:
+            raise PlexException(
+                'Plex token or url config.py: {}'.format(self.auth_type))
+
         try:
             plex = PlexServer(config.PLEX_SERVER_URL, config.PLEX_TOKEN)
         except Exception as e:
             raise PlexException(
                 'Failed to connect to Plex server: {} \n{}'.format(
-                    self.plex_server, e)
-            )
+                    self.plex_server, e))
 
         return plex
 
@@ -94,15 +116,18 @@ class PlexSearch(object):
             - Movie year (str): Only used if title is given
         Returns: A list of PlexAPI video objects (list)
         """
+        if not self.plex:
+            self.connect()
+
         found_movies = []
         if not guid and not title:
-            print('Error: plexutils.movie_search() requires guid or title.')
+            logger.error('Error: plexutils.movie_search() requires guid or title.')
             return found_movies
 
         movies = self.plex.library.section('Movies')
 
         if self.debug:
-            print('Searching Plex: {}'.format(guid))
+            logger.debug('Searching Plex: {}'.format(guid))
 
         if guid:
             for m in movies.search(guid=guid):
@@ -115,8 +140,10 @@ class PlexSearch(object):
         return found_movies
 
     def recently_added(self):
-        movies = self.plex.library.recentlyAdded()
-        return movies
+        if not self.plex:
+            self.connect()
+
+        return self.plex.library.recentlyAdded()
 
 
 class OmdbSearch(object):
@@ -132,18 +159,18 @@ class OmdbSearch(object):
 
         return omdb_url
 
-    def search(self, imdb_guid):
+    def guid_search(self, imdb_guid):
         """Builds a query url for OMDb using a provided IMDb guid and returns
         the response.
         Requires: imdb_guid(str) -
         Returns a json response.
         """
         if self.debug:
-            print('Searching OMDb: {}'.format(imdb_guid))
+            logger.debug('Searching OMDb: {}'.format(imdb_guid))
 
         omdb_query_url = self._get_omdb_url(imdb_guid)
         if self.debug:
-            print('Query url: {}'.format(omdb_query_url))
+            logger.debug('Query url: {}'.format(omdb_query_url))
 
         response = requests.get(
             omdb_query_url,
@@ -151,7 +178,7 @@ class OmdbSearch(object):
         )
 
         if self.debug:
-            print('Response: {} \n{}'.format(
+            logger.debug('Response: {} \n{}'.format(
                 response.status_code, response.text))
 
         if response.status_code != 200:
@@ -190,6 +217,7 @@ def format_quality(raw_quality):
         quality = input_quality + 'p'
     else:
         quality = input_quality.upper()
+
     return str(quality)
 
 
@@ -207,6 +235,7 @@ def get_filesize(movie):
         for media_part in media_elem.parts:
             raw_filesize += media_part.size
     filesize = utils.convert_file_size(raw_filesize)
+
     return filesize
 
 
@@ -220,7 +249,9 @@ def get_clean_imdb_guid(guid):
     result = re.search('.+//(.+)\?.+', guid)
     if result:
         clean_guid = result.group(1)
-        return clean_guid
+
     else:
-        print('ERROR - Could not determine IMDb guid: {}'.format(guid))
-        sys.exit(1)
+        logger.error('ERROR - Could not determine IMDb guid: {}'.format(guid))
+        clean_guid = None
+
+    return clean_guid

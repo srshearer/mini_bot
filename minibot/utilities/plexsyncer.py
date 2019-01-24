@@ -8,14 +8,14 @@ import json
 import requests
 import threading
 from flask import Flask, request #, g
-from mini_bot.minibot.utilities import config
-from mini_bot.minibot.utilities import utils
-from mini_bot.minibot.utilities import plexutils
-from mini_bot.minibot.utilities import serverutils
+from minibot.utilities import config
+from minibot.utilities import utils
+from minibot.utilities import plexutils
+from minibot.utilities import serverutils
 from slackannounce.utils import SlackSender
 
 
-logger = utils.Logger(file_path=os.path.abspath('./syncer.log'))
+logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
 
 
 class PlexSyncer(object):
@@ -29,17 +29,21 @@ class PlexSyncer(object):
         self.plex_local = None
 
     def connect_plex(self):
+        logger.info('Connecting to Plex')
         self.plex_local = plexutils.PlexSearch(
             debug=self.debug,
             auth_type=config.PLEX_AUTH_TYPE,
             server=config.PLEX_SERVER_URL
         )
+        self.plex_local.connect()
+
         return
 
     def in_local_plex(self):
-        self.title_year = omdb_q(self.imdb_guid)[0]
+        self.title_year = search_omdb(self.imdb_guid)[0]
         title, year = self.title_year.replace(')', '').split(' (')
-        print('[{}][{}][{}]'.format(self.imdb_guid, title, year))
+        logger.info('Checking local Plex for: [{}][{}][{}]'.format(
+            self.imdb_guid, title, year))
 
         if not self.plex_local:
             self.connect_plex()
@@ -49,21 +53,25 @@ class PlexSyncer(object):
 
         if not results:
             return False
+        else:
+            try:
+                formatted_results = ['Found: ']
+                for r in results:
+                    formatted = '\t{} - {} ({})'.format(
+                        plexutils.get_clean_imdb_guid(r.guid), r.title, r.year)
+                    formatted_results.append(formatted)
 
-        try:
-            print('Found: ')  # ToDo: Remove debug line
-            for r in results:
-                print('\t{} - {} ({})'.format(
-                    plexutils.get_clean_imdb_guid(r.guid), r.title, r.year))
-            return True
+                logger.debug('\n'.join(formatted_results))  # ToDo: Remove debug lines
 
-        except Exception as e:
-            print('Error checking local Plex server: {}'.format(e))
+                return True
+
+            except Exception as e:
+                logger.error('Error checking local Plex server: {}'.format(e))
 
         return False
 
     def notify(self, message):
-        print(message)
+        logger.info(message)
         notification = SlackSender(room='me', debug=self.debug)
         notification.set_simple_message(
             message=message, title='Plex Syncer Notification')
@@ -74,23 +82,26 @@ class PlexSyncer(object):
         if not self.in_local_plex():
             message = 'Movie not in library: [{}] {} - {}'.format(
                 self.imdb_guid, self.title_year, self.rem_path)
+            logger.info(message)
             self.notify(message)
-            print('rem_path: {} / movie_dir: {}'.format(self.rem_path, self.movie_dir)) # ToDo: Remove debug line
+            logger.debug('rem_path: {} / movie_dir: {}'.format(self.rem_path, self.movie_dir)) # ToDo: Remove debug line
 
             file_path = serverutils.get_file(self.rem_path, self.movie_dir)
             if not file_path:
                 message = 'Transfer failed: {}'.format(file_path)
             else:
                 message = 'Download complete: {}'.format(file_path)
+            logger.info(message)
             self.notify(message)
         else:
-            print('Movie already in library: [{}] {} - {}'.format(
+            logger.info('Movie already in library: [{}] {} - {}'.format(
                 self.imdb_guid, self.title_year, self.rem_path))
 
 
-def omdb_q(imdb_guid):
-    sercher = plexutils.OmdbSearch()
-    result = json.loads(sercher.search(imdb_guid=imdb_guid))
+def search_omdb(imdb_guid):
+    logger.info('Searching OMDb: {}'.format(imdb_guid))
+    omdb = plexutils.OmdbSearch()
+    result = json.loads(omdb.guid_search(imdb_guid=imdb_guid))
 
     try:
         msg = '{} ({})'.format(result["Title"], result["Year"])
@@ -101,6 +112,8 @@ def omdb_q(imdb_guid):
     except Exception as e:
         msg = ('Movie not found. Unknown error: {}'.format(e))
         status = 404
+
+    logger.info('Result: {} - {}'.format(status, msg))
 
     return msg, status
 
@@ -114,11 +127,10 @@ def send_new_movie_notification(imdb_guid, path):
     try:
         r = requests.post(
             url, movie_data, headers={'Content-Type': 'application/json'})
-        print('Response: [{}] {}'.format(r.status_code, r.text))
+        logger.info('Response: [{}] {}'.format(r.status_code, r.text))
 
     except requests.exceptions.ConnectionError:
-        print('Response: [404] Server not found')
-        sys.exit(1)
+        logger.error('Response: [404] Server not found')
 
 
 def run_server():
@@ -135,10 +147,11 @@ def run_server():
 
         imdb_guid = r["id"]
         path = r["path"]
-        title, status = omdb_q(imdb_guid)
+        title, status = search_omdb(imdb_guid)
 
         if status == 200:
             msg = '[{}] {} - path: {}'.format(imdb_guid, title, path)
+            logger.info('Result: {} - {}'.format(status, msg))
             syncer = PlexSyncer(
                 imdb_guid=imdb_guid,
                 rem_path=path,
@@ -150,9 +163,9 @@ def run_server():
             thread.start()
 
         else:
-            msg = 'Invalid movie'
+            msg = 'Unable to locate in OMDb: {}'.format(imdb_guid)
+            logger.error('{} - {}'.format(status, msg))
 
-        print(msg)
         return msg, status
 
     app.run(host='0.0.0.0', port=5000, debug=True)
