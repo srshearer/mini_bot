@@ -28,8 +28,8 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
         c = utils.convert_file_size(complete)
         t = utils.convert_file_size(total)
 
-        progress = '\tprogress: {}% [ {} / {} ]\033[F'.format(pct, c, t)
-        sys.stdout.write('\r' + progress)
+        # progress = '\tprogress: {}% [ {} / {} ]\033[F'.format(pct, c, t)
+        # sys.stdout.write('\r' + progress)
         log_progress(pct, c, t)
         time.sleep(1)
 
