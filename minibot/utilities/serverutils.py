@@ -15,6 +15,14 @@ logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
 
 def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
 
+    progress_list = range(100)[0::5]
+
+    def log_progress(pct, c, t):
+        if pct in progress_list:
+            logger.debug('Transfer Progress: {} - {}% [ {} / {} ]'.format(
+                f, pct, c, t))
+            progress_list.remove(pct)
+
     def status(complete, total):
         pct = 100 * complete / total
         c = utils.convert_file_size(complete)
@@ -22,6 +30,7 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
 
         progress = '\tprogress: {}% [ {} / {} ]\033[F'.format(pct, c, t)
         sys.stdout.write('\r' + progress)
+        log_progress(pct, c, t)
         time.sleep(1)
 
     f = os.path.basename(rem_path)
