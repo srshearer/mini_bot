@@ -19,7 +19,7 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
 
     def log_progress(pct, c, t):
         if pct in progress_list:
-            logger.debug('Transfer Progress: {} - {}% [ {} / {} ]'.format(
+            logger.debug('Transfer Progress: {} -\t{}%\t[ {} / {} ]'.format(
                 f, pct, c, t))
             progress_list.remove(pct)
 
@@ -30,6 +30,9 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
 
         # progress = '\tprogress: {}% [ {} / {} ]\033[F'.format(pct, c, t)
         # sys.stdout.write('\r' + progress)
+        if pct == 100:
+            download_successful = True
+
         log_progress(pct, c, t)
         time.sleep(1)
 
@@ -59,12 +62,8 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
 
         try:
             download_successful = True
-
             sftp.get(rem_path, os.path.join(tmp_dir_path, f), callback=status)
 
-            sys.stdout.write('\n')
-            msg = 'Transfer successful!'
-            logger.info('{}'.format(msg))
         except Exception as e:
             download_successful = False
             final_dest_dir_path = None
@@ -84,6 +83,8 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
 
     final_file_path = None
     if download_successful:
+        msg = 'Transfer successful!'
+        logger.info('{}'.format(msg))
         try:
             final_file_path = os.path.join(final_dest_dir_path, f)
             logger.info('Moving {} to {}'.format(f, final_dest_dir_path))
@@ -96,4 +97,4 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
         except OSError as e:
             logger.error('Failed to move file \n{}'.format(e))
 
-    return {'path': final_file_path, 'msg': msg}
+    return final_file_path, msg, download_successful

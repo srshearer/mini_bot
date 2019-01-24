@@ -86,12 +86,15 @@ class PlexSyncer(object):
             self.notify(message)
             logger.debug('rem_path: {} / movie_dir: {}'.format(self.rem_path, self.movie_dir)) # ToDo: Remove debug line
 
-            file_path = serverutils.get_file(self.rem_path, self.movie_dir)
-            if not file_path:
-                message = 'Transfer failed: {}'.format(file_path)
+            file_path, message, success = serverutils.get_file(
+                self.rem_path, self.movie_dir)
+            if not file_path or not success:
+                message = 'Transfer failed: {}'.format(message)
+                logger.error(message)
             else:
-                message = 'Download complete: {}'.format(file_path)
-            logger.info(message)
+                message = 'Download complete: {}\n\t- {}'.format(
+                    message, file_path)
+                logger.info(message)
             self.notify(message)
         else:
             logger.info('Movie already in library: [{}] {} - {}'.format(
