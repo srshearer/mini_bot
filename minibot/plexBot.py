@@ -1,28 +1,20 @@
 #!/usr/bin/python -u
 # encoding: utf-8
-
-"""
-Version: 2.0
-Steven Shearer / srshearer@gmail.com
-
-About:
-    Utilizes plexUtils to search for movies in Plex and OMDb, extract
-    information about the movie, and format it into json to send as
-    a rich Slack message/
-"""
-
+from __future__ import print_function, unicode_literals, absolute_import
 import sys
 import os.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__),
-                                '/usr/local/lib/python2.7/site-packages'))
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
 import argparse
-import plexBot.plex_config as config
-import plexBot.plexUtils as pu
-from plexBot.plexUtils import PlexSearch, OmdbSearch
-from slackBot.slackUtils import SlackSender, text_color
+from minibot.utilities import config
+from minibot.utilities import utils
+from minibot.utilities import plexsyncer
+from minibot.utilities import plexutils
+from slackannounce.utils import SlackSender, text_color
+
+
+logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
 
 
 def parse_arguments():
@@ -36,8 +28,19 @@ def parse_arguments():
                         required=False, action='store_true',
                         help='Enable dryrun mode. Message will not be sent.')
     parser.add_argument('-i', '--guid', dest='imdb_guid', metavar='<IMDb guid>',
-                        required=True, action='store',
+                        required=False, action='store',
                         help='Find movie by IMDb guid.')
+    parser.add_argument('-l', '--listen', dest='sync_listen',
+                        required=False, action='store_true',
+                        help='Run flask server listening for new movies at '
+                             'endpoint.')
+    parser.add_argument('-n', '--sync_notify', dest='sync_notify',
+                        action='store_true',
+                        help='Send new movie notification.Requires -i and -p '
+                             'to be set')
+    parser.add_argument('-p', '--path', dest='path', metavar='<file path>',
+                        required=False, action='store',
+                        help='Path to file.')
     args = parser.parse_args()
 
     return args
@@ -47,13 +50,13 @@ class MovieNotification(object):
     """Creates an object for searching a Plex server and OMDb for relevant info
     about a given movie and formatting a json notification for Slack.
     """
-    def __init__(self, **kwargs):
-        self.debug = kwargs.get('debug', False)
+    def __init__(self, debug=False, **kwargs):
+        self.debug = debug
         self.imdb_guid = None
         self.color = text_color('purple')
-        self._plex_helper = PlexSearch(**kwargs)
+        self._plex_helper = plexutils.PlexSearch(**kwargs)
         self._plex_result = None
-        self._omdb_helper = OmdbSearch(**kwargs)
+        self._omdb_helper = plexutils.OmdbSearch(**kwargs)
         self._omdb_result = None
 
     def search(self, imdb_guid):
@@ -64,10 +67,16 @@ class MovieNotification(object):
             - json(rich slack notification)
         """
         self.imdb_guid = imdb_guid
-        self._plex_result = self._plex_helper.movie_search(imdb_guid)
+
         self._omdb_result = self._get_omdb_info(imdb_guid)
 
-        return self.json_attachment
+        plex_results = self._plex_helper.movie_search(imdb_guid)
+        if plex_results:
+            self._plex_result = plex_results[0]
+        else:
+            self._plex_result = None
+
+        return self._json_attachment
 
     def _get_omdb_info(self, imdb_guid):
         """Searches Plex via PlexAPI and OMDb via a query for a movie using an
@@ -83,12 +92,12 @@ class MovieNotification(object):
         return _omdb_info_data
 
     @property
-    def json_attachment(self):
+    def _json_attachment(self):
         """Formatted json attachment suitable for sending a rich
         Slack notification.
         """
-        quality = pu.get_video_quality(self._plex_result)
-        filesize = pu.get_filesize(self._plex_result)
+        quality = plexutils.get_video_quality(self._plex_result)
+        filesize = plexutils.get_filesize(self._plex_result)
 
         plot = self._omdb_result['Plot']
         poster_link = self._omdb_result['Poster']
@@ -131,7 +140,7 @@ def get_new_movie_json(imdb_guid, **kwargs):
     return movie_data
 
 
-def send_movie_notification(args):
+def send_new_movie_slack_notification(args):
     """Send a rich movie notification to Slack using supplied arguments.
     Requires:
         - str(imdb_guid)
@@ -142,6 +151,9 @@ def send_movie_notification(args):
         auth_type=config.PLEX_AUTH_TYPE
     )
 
+    logger.debug(movie_json)
+
+    logger.info('Sending to slack_announce')
     slack = SlackSender(
         json_attachments=movie_json,
         debug=args.debug,
@@ -153,7 +165,19 @@ def send_movie_notification(args):
 
 def main():
     args = parse_arguments()
-    send_movie_notification(args)
+
+    if args.sync_listen:
+        logger.info('Starting listener')
+        plexsyncer.run_server()
+    elif args.sync_notify:
+        logger.info('Sending sync request')
+        plexsyncer.send_new_movie_notification(
+                imdb_guid=args.imdb_guid, path=args.path)
+    elif args.guid:
+        logger.info('Sending new movie notification')
+        send_new_movie_slack_notification(args)
+    else:
+        pass
 
 
 if __name__ == '__main__':
