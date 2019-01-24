@@ -19,7 +19,7 @@ def get_file(rem_path, destination=config.IN_PROGRESS_DIR, **kwargs):
 
     def log_progress(pct, c, t):
         if pct in progress_list:
-            logger.debug('Transfer Progress: {} -\t{}%\t[ {} / {} ]'.format(
+            logger.debug('Transfer Progress: {} - {}%\t[ {} / {} ]'.format(
                 f, pct, c, t))
             progress_list.remove(pct)
 
