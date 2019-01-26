@@ -173,7 +173,7 @@ def main():
         logger.info('Sending sync request')
         plexsyncer.send_new_movie_notification(
                 imdb_guid=args.imdb_guid, path=args.path)
-    elif args.guid:
+    elif args.imdb_guid:
         logger.info('Sending new movie notification')
         send_new_movie_slack_notification(args)
     else:
