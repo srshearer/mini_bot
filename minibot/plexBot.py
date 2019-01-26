@@ -86,7 +86,7 @@ class MovieNotification(object):
         Returns:
             - json.loads(OMDb query data)
         """
-        omdb_result = self._omdb_helper.search(imdb_guid)
+        omdb_result = self._omdb_helper.guid_search(imdb_guid)
         _omdb_info_data = json.loads(omdb_result)
 
         return _omdb_info_data

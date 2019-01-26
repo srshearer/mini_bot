@@ -84,7 +84,8 @@ class PlexSyncer(object):
                 self.imdb_guid, self.title_year, self.rem_path)
             logger.info(message)
             self.notify(message)
-            logger.debug('rem_path: {} / movie_dir: {}'.format(self.rem_path, self.movie_dir)) # ToDo: Remove debug line
+            logger.debug('rem_path: {} / movie_dir: {}'.format(
+                self.rem_path, self.movie_dir)) # ToDo: Remove debug line
 
             file_path, message, success = serverutils.get_file(
                 self.rem_path, self.movie_dir)
