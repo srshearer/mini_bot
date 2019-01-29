@@ -6,11 +6,13 @@ import sys
 import os.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import re
+import json
 import requests
 from minibot.utilities import config
 from minibot.utilities import utils
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
+from slackannounce.utils import SlackSender, text_color
 
 
 logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
@@ -146,48 +148,149 @@ class PlexSearch(object):
         return self.plex.library.recentlyAdded()
 
 
-class OmdbSearch(object):
+def omdb_guid_search(imdb_guid, debug=False):
     """Queries OMDb.org for movie information using an IMDb guid."""
-    def __init__(self, **kwargs):
-        self.debug = kwargs.get('debug', False)
-        self._omdb_key = config.OMDB_API_KEY
 
-    def _get_omdb_url(self, imdb_guid):
-        omdb_url = 'http://www.omdbapi.com/?i={}&plot=short&apikey={}'.format(
-            imdb_guid, self._omdb_key
-        )
+    def _get_omdb_url(imdb_guid):
+        """Builds a query url for OMDb using a provided IMDb guid and
+        returns the response.
+        Requires: imdb_guid(str) -
+        Returns url(str)
+        """
+        base_url = 'http://www.omdbapi.com/'
+        query = '?i={}&plot=short'.format(imdb_guid)
+        api_key = '&apikey={}'.format(config.OMDB_API_KEY)
+
+        omdb_url = '{}{}{}'.format(base_url, query, api_key)
 
         return omdb_url
 
-    def guid_search(self, imdb_guid):
-        """Builds a query url for OMDb using a provided IMDb guid and returns
-        the response.
-        Requires: imdb_guid(str) -
-        Returns a json response.
+    if debug:
+        logger.debug('Searching OMDb: {}'.format(imdb_guid))
+
+    omdb_query_url = _get_omdb_url(imdb_guid)
+    if debug:
+        logger.debug('Query url: {}'.format(omdb_query_url))
+
+    response = requests.get(
+        omdb_query_url,
+        headers={'Content-Type': 'application/json'}
+    )
+
+    if response.status_code != 200:
+        logger.error('OMDb responded with an error')
+        logger.debug('Response: [{}] - {}'.format(
+            response.status_code, response.text))
+
+    elif debug:
+        logger.debug('Response: [{}] - {}'.format(
+            response.status_code, response.text))
+
+    return response.status_code, json.loads(response.text)
+
+
+class MovieNotification(object):
+    """Creates an object for searching a Plex server and OMDb for relevant info
+    about a given movie and formatting a json notification for Slack.
+    """
+    def __init__(self, debug=False, **kwargs):
+        self.debug = debug
+        self.imdb_guid = None
+        self.color = text_color('purple')
+        self._plex_helper = PlexSearch(**kwargs)
+        self._plex_result = None
+        self._omdb_result = None
+
+    def search(self, imdb_guid):
+        """Searches Plex via PlexAPI and OMDb for a movie using an IMDb guid.
+        Requires:
+            - str(imdb_guid)
+        Returns:
+            - json(rich slack notification)
         """
-        if self.debug:
-            logger.debug('Searching OMDb: {}'.format(imdb_guid))
+        self.imdb_guid = imdb_guid
 
-        omdb_query_url = self._get_omdb_url(imdb_guid)
-        if self.debug:
-            logger.debug('Query url: {}'.format(omdb_query_url))
+        self._omdb_result = omdb_guid_search(imdb_guid, debug=self.debug)
 
-        response = requests.get(
-            omdb_query_url,
-            headers={'Content-Type': 'application/json'}
-        )
-
-        if self.debug:
-            logger.debug('Response: {} \n{}'.format(
-                response.status_code, response.text))
-
-        if response.status_code != 200:
-            raise ValueError(
-                'Request to slack returned an error {}, the response is:\n'
-                '{}'.format(response.status_code, response.text)
-            )
+        plex_results = self._plex_helper.movie_search(imdb_guid)
+        if plex_results:
+            self._plex_result = plex_results[0]
         else:
-            return response.text
+            self._plex_result = None
+
+        return self._json_attachment
+
+    @property
+    def _json_attachment(self):
+        """Formatted json attachment suitable for sending a rich
+        Slack notification.
+        """
+        quality = get_video_quality(self._plex_result)
+        filesize = get_filesize(self._plex_result)
+
+        plot = self._omdb_result['Plot']
+        poster_link = self._omdb_result['Poster']
+        rating = self._omdb_result['Rated']
+        director = self._omdb_result['Director']
+        duration = self._omdb_result['Runtime']
+
+        pretext = 'New Movie Available:'
+        movie_title_year = '{} ({})'.format(
+            self._plex_result.title, self._plex_result.year)
+        title = '{} {}'.format(movie_title_year, quality)
+        fallback = '{} {} {}'.format(pretext, movie_title_year, quality)
+        title_link = 'http://www.imdb.com/title/{}'.format(self.imdb_guid)
+
+        json_attachments = {
+            "fallback": fallback,
+            "color": self.color,
+            "pretext": pretext,
+            "title": title,
+            "title_link": title_link,
+            "text": duration,
+            "footer": self._format_footer(plot, director, rating, filesize),
+            "image_url": poster_link,
+        }
+
+        return json_attachments
+
+    @staticmethod
+    def _format_footer(plot, director, rating, filesize):
+        return '{} \n\nDirected by: {} \nRated [{}]\nSize: {}\nPoster: '.format(
+            plot, director, rating, filesize)
+
+
+def get_new_movie_json(imdb_guid, **kwargs):
+    """Search for a movie via IMDb guid and
+    assemble a json attachment for Slack"""
+    movie_searcher = MovieNotification(**kwargs)
+    movie_data = movie_searcher.search(imdb_guid)
+
+    return movie_data
+
+
+def send_new_movie_slack_notification(args):
+    """Send a rich movie notification to Slack using supplied arguments.
+    Requires:
+        - str(imdb_guid)
+    """
+    movie_json = get_new_movie_json(
+        imdb_guid=args.imdb_guid,
+        debug=args.debug,
+        auth_type=config.PLEX_AUTH_TYPE
+    )
+
+    if args.debug:
+        logger.debug(movie_json)
+
+    logger.info('Sending to slack_announce')
+    slack = SlackSender(
+        json_attachments=movie_json,
+        debug=args.debug,
+        dryrun=args.dryrun
+    )
+
+    slack.send()
 
 
 def get_video_quality(video):

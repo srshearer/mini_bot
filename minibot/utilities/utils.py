@@ -3,6 +3,7 @@
 import math
 import time
 import os.path
+import functools
 
 
 class Logger(object):
@@ -102,3 +103,32 @@ def convert_file_size(size_bytes):
     s = round(size_bytes / p, 2)
 
     return '{} {}'.format(s, size_name[i])
+
+
+def retry(attempts=3, exception_to_check=Exception,
+          delay=3, backoff=2, logger=None):
+    """Retry decorator to call function up to specified number of times in
+    case of specified exception. """
+
+    def decorator(func):
+        @functools.wraps(func)
+        def func_retry(*args, **kwargs):
+            this_attempts, this_delay = attempts, delay
+            while this_attempts > 0:
+                try:
+                    return func(*args, **kwargs)
+                except exception_to_check as e:
+                    message = 'Exception: {}, Retrying in {} seconds...'.format(
+                        str(e), this_delay)
+                    if logger:
+                        logger.warning(message)
+                    else:
+                        print(message)
+                    time.sleep(this_delay)
+                    this_attempts -= 1
+                    this_delay *= backoff
+            return func(*args, **kwargs)
+
+        return func_retry
+
+    return decorator
