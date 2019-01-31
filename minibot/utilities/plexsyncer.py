@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import json
 import requests
 import threading
-from flask import Flask, request #, g
+from flask import Flask, request
 from minibot.utilities import config
 from minibot.utilities import utils
 from minibot.utilities import plexutils
@@ -18,15 +18,18 @@ from slackannounce.utils import SlackSender
 logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
 _NEW_MOVIE_ENDPOINT = '/new_movie/'
 
+
 class PlexSyncer(object):
-    def __init__(self, imdb_guid=None, rem_path=None, debug=False, **kwargs):
+    def __init__(self, imdb_guid=None, rem_path=None, debug=False,
+                 logger=logger, **kwargs):
         self.kwargs = kwargs
         self.debug = debug
         self.imdb_guid = imdb_guid
         self.rem_path = rem_path
-        self.title_year = kwargs.get('title', None)
-        self.movie_dir = os.path.expanduser(config.NEW_MOVIE_PATH)
+        self.title_year = kwargs.get(str('title'), None)
+        self.movie_dir = os.path.expanduser(config.FILE_TRANSFER_COMPLETE_DIR)
         self.plex_local = None
+        self.logger = logger
 
     def connect_plex(self):
         logger.info('Connecting to Plex')
@@ -39,40 +42,8 @@ class PlexSyncer(object):
 
         return
 
-    def in_local_plex(self):
-        import pdb; pdb.set_trace()
-        _, self.title_year = validate_movie(self.imdb_guid)
-        title, year = self.title_year.replace(')', '').split(' (')
-        logger.info('Checking local Plex for: [{}][{}][{}]'.format(
-            self.imdb_guid, title, year))
-
-        if not self.plex_local:
-            self.connect_plex()
-
-        results = self.plex_local.movie_search(
-            guid=self.imdb_guid, title=title, year=year)
-
-        if not results:
-            return False
-        else:
-            try:
-                formatted_results = ['Found: ']
-                for r in results:
-                    formatted = '\t{} - {} ({})'.format(
-                        plexutils.get_clean_imdb_guid(r.guid), r.title, r.year)
-                    formatted_results.append(formatted)
-
-                logger.debug('\n'.join(formatted_results))  # ToDo: Remove debug lines
-
-                return True
-
-            except Exception as e:
-                logger.error('Error checking local Plex server: {}'.format(e))
-
-        return False
-
     def notify_slack(self, message, room='me'):
-        logger.info(message)
+        self.logger.info(message)
         notification = SlackSender(room=room, debug=self.debug)
         notification.set_simple_message(
             message=message, title='Plex Syncer Notification')
@@ -80,24 +51,28 @@ class PlexSyncer(object):
 
     def run_sync_flow(self):
         self.connect_plex()
-        if not self.in_local_plex():
+        if not self.plex_local.in_plex_library(guid=self.imdb_guid):
             message = 'Movie not in library: [{}] {} - {}'.format(
                 self.imdb_guid, self.title_year, self.rem_path)
-            logger.info(message)
+            self.logger.info(message)
             self.notify_slack(message)
 
-            file_path, message, success = serverutils.get_file(
-                self.rem_path, self.movie_dir)
+            syncer = serverutils.FileSyncer(
+                remote_file=self.rem_path,
+                destination=self.movie_dir,
+                logger=logger)
+            success, file_path = syncer.get_remote_file()
+
             if not file_path or not success:
                 message = 'Transfer failed: {}'.format(message)
-                logger.error(message)
+                self.logger.error(message)
             else:
                 message = 'Download complete: {}\n\t- {}'.format(
                     message, file_path)
-                logger.info(message)
+                self.logger.info(message)
             self.notify_slack(message)
         else:
-            logger.info('Movie already in library: [{}] {} - {}'.format(
+            self.logger.info('Movie already in library: [{}] {} - {}'.format(
                 self.imdb_guid, self.title_year, self.rem_path))
 
 
@@ -135,7 +110,7 @@ def post_new_movie_to_syncer(imdb_guid, path):
         logger.error('Response: [404] Server not found')
 
 
-def run_server(debug=False):
+def run_server(debug=False, logger=logger):
     app = Flask(__name__)
 
     @app.route(_NEW_MOVIE_ENDPOINT, methods=['POST'])
@@ -157,11 +132,12 @@ def run_server(debug=False):
             syncer = PlexSyncer(
                 imdb_guid=imdb_guid,
                 rem_path=path,
-                title=title
+                title=title,
+                logger=logger
             )
 
             thread = threading.Thread(target=sync_movie,
-                                      kwargs={'syncer': syncer})
+                                      kwargs={str('syncer'): syncer})
             thread.start()
 
         else:

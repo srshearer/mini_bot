@@ -34,12 +34,13 @@ class PlexSearch(object):
         - auth_type (user or token): choose authentication method
     """
     def __init__(self, debug=False, auth_type=config.PLEX_AUTH_TYPE,
-                 server=config.PLEX_SERVER_URL, **kwargs):
+                 server=config.PLEX_SERVER_URL, logger=logger, **kwargs):
         self.kwargs = kwargs
         self.debug = debug
         self.auth_type = auth_type
         self.plex_server = server
         self.plex = None
+        self.logger = logger
 
     def connect(self, auth_type=None):
         """
@@ -59,7 +60,7 @@ class PlexSearch(object):
         self.plex = plex
 
         if self.debug:
-            logger.debug('Connected: {}'.format(self.plex_server))
+            self.logger.debug('Connected: {}'.format(self.plex_server))
 
         return plex
 
@@ -71,7 +72,7 @@ class PlexSearch(object):
         Returns MyPlexAccount object
         """
         if self.debug:
-            logger.debug('Connecting to Plex: user auth')
+            self.logger.debug('Connecting to Plex: user auth')
 
         if not config.PLEX_USERNAME or not config.PLEX_PASSWORD:
             raise PlexException('Plex username or password missing from '
@@ -95,7 +96,7 @@ class PlexSearch(object):
         Returns PlexServer object
         """
         if self.debug:
-            logger.debug('Connecting to Plex: token auth')
+            self.logger.debug('Connecting to Plex: token auth')
 
         if not config.PLEX_SERVER_URL or not config.PLEX_TOKEN:
             raise PlexException(
@@ -123,13 +124,14 @@ class PlexSearch(object):
 
         found_movies = []
         if not guid and not title:
-            logger.error('Error: plexutils.movie_search() requires guid or title.')
+            self.logger.error(
+                'Error: plexutils.movie_search() requires guid or title.')
             return found_movies
 
         movies = self.plex.library.section('Movies')
 
         if self.debug:
-            logger.debug('Searching Plex: {}'.format(guid))
+            self.logger.debug('Searching Plex: {}'.format(guid))
 
         if guid:
             for m in movies.search(guid=guid):
@@ -146,6 +148,20 @@ class PlexSearch(object):
             self.connect()
 
         return self.plex.library.recentlyAdded()
+
+    def in_plex_library(self, guid=None, title=None, year=None):
+        if not self.plex:
+            self.connect()
+
+        results = self.plex.movie_search(
+            guid=guid, title=title, year=year)
+
+        if results:
+            in_plex = True
+        else:
+            in_plex = False
+
+        return in_plex
 
 
 def omdb_guid_search(imdb_guid, debug=False):
