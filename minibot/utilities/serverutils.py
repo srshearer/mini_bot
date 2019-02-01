@@ -129,7 +129,7 @@ class FileSyncer(object):
             every 5 percent of file completion: 0%, 5%, 10% … 100%
         :return:
         """
-        pct = (100 * (complete / total))
+        pct = 100 * complete / total
         c = utils.convert_file_size(complete)
         t = utils.convert_file_size(total)
 
