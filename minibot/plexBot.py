@@ -45,10 +45,10 @@ def main():
     elif args.path and args.imdb_guid:
         logger.info('Sending sync request')
         plexsyncer.post_new_movie_to_syncer(
-                imdb_guid=args.imdb_guid, path=args.path, logger=logger)
+                imdb_guid=args.imdb_guid, path=args.path)
     elif args.imdb_guid:
         logger.info('Sending new movie notification')
-        plexutils.send_new_movie_slack_notification(args, logger=logger)
+        plexutils.send_new_movie_slack_notification(args)
     else:
         parser.print_help()
 
