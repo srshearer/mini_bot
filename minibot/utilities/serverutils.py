@@ -16,7 +16,7 @@ class FileSyncer(object):
         self.remote_server = config.REMOTE_FILE_SERVER
         self.remote_user = config.REMOTE_USER
 
-        self._remote_file = remote_file
+        self.remote_file = remote_file
         self.filename = None
         self.final_file_path = None
 
@@ -36,27 +36,26 @@ class FileSyncer(object):
         self._prev_completed_bytes = 0
         self._prev_progress_time = None
 
-    @property
-    def remote_file(self, remote_file=None):
+    def _set_file_paths(self, remote_file=None):
         if remote_file:
-            self._remote_file = remote_file
+            self.remote_file = remote_file
 
-        if not self._remote_file:
+        if not self.remote_file:
             self.logger.error('No remote file!', stdout=True)
             sys.exit(1)
 
-        self.filename = os.path.basename(self._remote_file)
+        self.filename = os.path.basename(self.remote_file)
         self.final_file_path = os.path.join(
             self.destination_dir, self.filename)
 
-        return self._remote_file
+        return self.remote_file
 
     def get_remote_file(self):
-        if not self._remote_file:
+        if not self.remote_file:
             self.logger.error(
                 'Remote file not set! Please set FileSyncer.remote_file')
         else:
-            self.remote_file(self._remote_file)
+            self._set_file_paths(self.remote_file)
             success = self._transfer_file()
             if success:
                 self._move_file_to_destination()
@@ -77,7 +76,7 @@ class FileSyncer(object):
                                    username=self.remote_user,
                                    private_key=self._local_prv_key) as sftp:
                 self._transfer_start_time = time.time()
-                sftp.get(self._remote_file, self._in_progress_file,
+                sftp.get(self.remote_file, self._in_progress_file,
                          callback=self._transfer_progress)
 
         except Exception as e:
