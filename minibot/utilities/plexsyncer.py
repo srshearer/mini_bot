@@ -54,7 +54,6 @@ class PlexSyncer(object):
         if not self.plex_local.in_plex_library(guid=self.imdb_guid):
             message = 'Movie not in library: [{}] {} - {}'.format(
                 self.imdb_guid, self.title_year, self.rem_path)
-            # self.logger.info(message)
             self.notify_slack(message)
 
             syncer = serverutils.FileSyncer(
@@ -67,9 +66,7 @@ class PlexSyncer(object):
                 message = 'Transfer failed: {}'.format(message)
                 self.logger.error(message)
             else:
-                message = 'Download complete: {}\n\t- {}'.format(
-                    message, file_path)
-                # self.logger.info(message)
+                message = 'Download complete: {}'.format(file_path)
             self.notify_slack(message)
         else:
             self.logger.info('Movie already in library: [{}] {} - {}'.format(
