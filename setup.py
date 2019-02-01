@@ -14,7 +14,7 @@ setuptools.setup(
         'requests',
         'argparse',
         'flask',
-        'paramiko',
+        'pysftp',
         'slackannounce',
     ],
     license='MIT',
