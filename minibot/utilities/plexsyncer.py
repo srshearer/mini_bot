@@ -8,14 +8,13 @@ import json
 import requests
 import threading
 from flask import Flask, request
+from minibot import logger
 from minibot.utilities import config
-from minibot.utilities import utils
 from minibot.utilities import plexutils
 from minibot.utilities import serverutils
 from slackannounce.utils import SlackSender
 
 
-logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
 _NEW_MOVIE_ENDPOINT = '/new_movie/'
 
 
@@ -32,7 +31,7 @@ class PlexSyncer(object):
         self.logger = logger
 
     def connect_plex(self):
-        logger.info('Connecting to Plex')
+        self.logger.info('Connecting to Plex')
         self.plex_local = plexutils.PlexSearch(
             debug=self.debug,
             auth_type=config.PLEX_AUTH_TYPE,
@@ -66,14 +65,15 @@ class PlexSyncer(object):
                 message = 'Transfer failed: {}'.format(message)
                 self.logger.error(message)
             else:
-                message = 'Download complete: {}'.format(file_path)
+                message = 'Download complete: {} - {}'.format(
+                    self.title_year, file_path)
             self.notify_slack(message)
         else:
-            self.logger.info('Movie already in library: [{}] {} - {}'.format(
+            self.logger.info('Movie already in library: [{}] {}\n{}'.format(
                 self.imdb_guid, self.title_year, self.rem_path))
 
 
-def validate_movie(imdb_guid, debug=False):
+def validate_movie(imdb_guid, debug=False, logger=logger):
     logger.info('Validating movie with OMDb: {}'.format(imdb_guid))
     status, result = plexutils.omdb_guid_search(
         imdb_guid=imdb_guid, debug=debug)
@@ -107,7 +107,7 @@ def post_new_movie_to_syncer(imdb_guid, path):
         logger.error('Response: [404] Server not found')
 
 
-def run_server(debug=False, logger=logger):
+def run_server(debug=False):
     app = Flask(__name__)
 
     @app.route(_NEW_MOVIE_ENDPOINT, methods=['POST'])

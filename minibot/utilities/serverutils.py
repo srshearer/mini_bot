@@ -6,13 +6,14 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import time
 import pysftp
+from minibot import logger
 from minibot.utilities import utils
 from minibot.utilities import config
 
 
 class FileSyncer(object):
     def __init__(self, remote_file=None,
-                 destination=config.FILE_TRANSFER_COMPLETE_DIR, logger=None):
+                 destination=config.FILE_TRANSFER_COMPLETE_DIR):
         self.remote_server = config.REMOTE_FILE_SERVER
         self.remote_user = config.REMOTE_USER
 

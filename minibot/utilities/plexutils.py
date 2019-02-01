@@ -8,14 +8,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import re
 import json
 import requests
+from minibot import logger
 from minibot.utilities import config
 from minibot.utilities import utils
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 from slackannounce.utils import SlackSender, text_color
-
-
-logger = utils.Logger(file_path=os.path.abspath('./plexbot.log'), stdout=True)
 
 
 class PlexException(Exception):
