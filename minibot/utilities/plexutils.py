@@ -47,6 +47,8 @@ class PlexSearch(object):
         if not auth_type:
             auth_type = self.auth_type
 
+        self.logger.debug('Connecting to Plex: {}'.format(auth_type))
+
         if auth_type == 'user':
             plex = self._plex_account()
         elif auth_type == 'token':
@@ -56,9 +58,7 @@ class PlexSearch(object):
                 'Invalid Plex connection type: {}'.format(self.auth_type))
 
         self.plex = plex
-
-        if self.debug:
-            self.logger.debug('Connected: {}'.format(self.plex_server))
+        self.logger.debug('Connected: {}'.format(self.plex_server))
 
         return plex
 
@@ -69,9 +69,6 @@ class PlexSearch(object):
             - IMDb guid of a movie to search for
         Returns MyPlexAccount object
         """
-        if self.debug:
-            self.logger.debug('Connecting to Plex: user auth')
-
         if not config.PLEX_USERNAME or not config.PLEX_PASSWORD:
             raise PlexException('Plex username or password missing from '
                                 'config.py: {}'.format(self.auth_type))
@@ -93,9 +90,6 @@ class PlexSearch(object):
             - IMDb guid of a movie to search for
         Returns PlexServer object
         """
-        if self.debug:
-            self.logger.debug('Connecting to Plex: token auth')
-
         if not config.PLEX_SERVER_URL or not config.PLEX_TOKEN:
             raise PlexException(
                 'Plex token or url config.py: {}'.format(self.auth_type))
@@ -224,7 +218,7 @@ class MovieNotification(object):
         """
         self.imdb_guid = imdb_guid
 
-        self._omdb_result = omdb_guid_search(imdb_guid, debug=self.debug)
+        _, self._omdb_result = omdb_guid_search(imdb_guid, debug=self.debug)
 
         plex_results = self._plex_helper.movie_search(imdb_guid)
         if plex_results:
