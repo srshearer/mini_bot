@@ -57,8 +57,7 @@ class PlexSyncer(object):
 
             syncer = serverutils.FileSyncer(
                 remote_file=self.rem_path,
-                destination=self.movie_dir,
-                logger=logger)
+                destination=self.movie_dir)
             success, file_path = syncer.get_remote_file()
 
             if not file_path or not success:
@@ -73,7 +72,7 @@ class PlexSyncer(object):
                 self.imdb_guid, self.title_year, self.rem_path))
 
 
-def validate_movie(imdb_guid, debug=False, logger=logger):
+def validate_movie(imdb_guid, debug=False):
     logger.info('Validating movie with OMDb: {}'.format(imdb_guid))
     status, result = plexutils.omdb_guid_search(
         imdb_guid=imdb_guid, debug=debug)
@@ -129,8 +128,7 @@ def run_server(debug=False):
             syncer = PlexSyncer(
                 imdb_guid=imdb_guid,
                 rem_path=path,
-                title=title,
-                logger=logger
+                title=title
             )
 
             thread = threading.Thread(target=sync_movie,
