@@ -153,7 +153,7 @@ class PlexSearch(object):
         if not self.plex:
             self.connect()
 
-        results = self.plex.movie_search(
+        results = self.movie_search(
             guid=guid, title=title, year=year)
 
         if results:
