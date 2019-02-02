@@ -26,11 +26,10 @@ def parse_arguments():
                         help='Find movie by IMDb guid.')
     parser.add_argument('-l', '--listen', dest='sync_listen',
                         required=False, action='store_true',
-                        help='Run flask server listening for new movies at '
-                             'endpoint.')
+                        help='Run flask server listening at endpoint for new '
+                             'movies to sync.')
     parser.add_argument('-p', '--path', dest='path', metavar='<file path>',
-                        required=False, action='store',
-                        help='Path to file.')
+                        required=False, action='store', help='Path to file.')
     args = parser.parse_args()
 
     return args, parser

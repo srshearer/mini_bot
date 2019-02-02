@@ -57,6 +57,9 @@ class FileSyncer(object):
                 'Remote file not set! Please set FileSyncer.remote_file')
         else:
             self._set_file_paths(self.remote_file)
+            self.logger.info('Copying from remote server: {}@{}:\'{}\''.format(
+                self.remote_user, self.remote_server, self.remote_file))
+            self.logger.debug('Temp destination: {}'.format(self._tmp_dir))
             success = self._transfer_file()
             if success:
                 self._move_file_to_destination()
@@ -65,11 +68,8 @@ class FileSyncer(object):
 
         return self.transfer_successful, self.final_file_path
 
+    @utils.retry(logger=logger)
     def _transfer_file(self):
-        self.logger.info('Copying from remote server: {}@{}:\'{}\''.format(
-            self.remote_user, self.remote_server, self.remote_file))
-        self.logger.debug('Temp destination: {}'.format(self._tmp_dir))
-
         try:
             self._in_progress_file = os.path.join(
                 self._tmp_dir, 'IN_PROGRESS-' + self.filename)
@@ -82,13 +82,12 @@ class FileSyncer(object):
 
         except Exception as e:
             self.transfer_successful = False
-            msg = 'Error getting file: {} \n{}'.format(self.filename, e)
-            self.logger.error('{}'.format(msg))
+            self.logger.error(
+                'File transfer failed: {} \n{}'.format(self.filename, e))
             raise
 
         if self.transfer_successful:
-            msg = 'Transfer successful!'
-            self.logger.info('{}'.format(msg))
+            self.logger.info('Transfer successful!')
 
         return self.transfer_successful
 
