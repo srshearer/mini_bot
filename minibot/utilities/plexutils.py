@@ -76,7 +76,7 @@ class PlexSearch(object):
         try:
             account = MyPlexAccount(
                 config.PLEX_USERNAME, config.PLEX_PASSWORD)
-            plex = account.resource(self.plex_server).connect()
+            plex = account.resource(config.PLEX_SERVER_NAME).connect()
         except Exception as e:
             raise PlexException(
                 'Failed to connect to Plex server: {} \n{}'.format(
