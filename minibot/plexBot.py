@@ -10,6 +10,7 @@ from minibot import logger
 from minibot.utilities import plexsyncer
 from minibot.utilities import plexutils
 from minibot.utilities import filesyncer
+from minibot.utilities import db_utils
 
 
 def parse_arguments():
@@ -53,7 +54,7 @@ def main():
         logger.info('Sending new movie notification')
         plexutils.send_new_movie_slack_notification(args)
     elif args.transfer:
-        filesyncer.transfer_queue_loop()
+        filesyncer.transfer_queue_loop(db_utils.FileTransferDB())
     else:
         parser.print_help()
 

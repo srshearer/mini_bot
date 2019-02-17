@@ -276,6 +276,7 @@ def transfer_queue_loop(db):
     cont = True
     q = TransferQueue(db)
     while cont:
+        logger.debug('Checking queue...')
         unqueued = db.select_all_unqueued_movies()
         for unqueued_row in unqueued:
             unqueued_dict = db.row_to_dict(unqueued_row)
@@ -285,5 +286,6 @@ def transfer_queue_loop(db):
         print(' * START QUEUE *')
         q.start()
 
-        print('NO MORE')
-        cont = False
+        logger.debug('Queue empty')
+        time.sleep(10)
+        # cont = False
