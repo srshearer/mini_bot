@@ -5,8 +5,8 @@ import sqlite3 as sql
 
 
 # database info
-_db_path = './remote_movies.db'
-_schema_path = './schema.sql'
+_db_path = './utilities/remote_movies.db'
+_schema_path = './utilities/schema.sql'
 _table_name = 'remote_movies'
 
 

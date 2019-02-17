@@ -9,6 +9,7 @@ import argparse
 from minibot import logger
 from minibot.utilities import plexsyncer
 from minibot.utilities import plexutils
+from minibot.utilities import filesyncer
 
 
 def parse_arguments():
@@ -21,6 +22,9 @@ def parse_arguments():
     parser.add_argument('--dry', dest='dryrun',
                         required=False, action='store_true',
                         help='Enable dryrun mode. Message will not be sent.')
+    parser.add_argument('-t', '--transfer', dest='transfer',
+                        required=False, action='store_true',
+                        help='Loop the file transfer queue.')
     parser.add_argument('-i', '--guid', dest='imdb_guid', metavar='<IMDb guid>',
                         required=False, action='store',
                         help='Find movie by IMDb guid.')
@@ -48,6 +52,8 @@ def main():
     elif args.imdb_guid:
         logger.info('Sending new movie notification')
         plexutils.send_new_movie_slack_notification(args)
+    elif args.transfer:
+        filesyncer.transfer_queue_loop()
     else:
         parser.print_help()
 
