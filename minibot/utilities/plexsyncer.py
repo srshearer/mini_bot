@@ -6,70 +6,15 @@ import os.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
 import requests
-import threading
 from flask import Flask, request
 from minibot import logger
 from minibot.utilities import config
 from minibot.utilities import plexutils
-from minibot.utilities import serverutils
-from slackannounce.utils import SlackSender
+from minibot.utilities import db_utils
 
 
 _NEW_MOVIE_ENDPOINT = '/new_movie/'
-
-
-class PlexSyncer(object):
-    def __init__(self, imdb_guid=None, rem_path=None, debug=False,
-                 logger=logger, **kwargs):
-        self.kwargs = kwargs
-        self.debug = debug
-        self.imdb_guid = imdb_guid
-        self.rem_path = rem_path
-        self.title_year = kwargs.get(str('title'), None)
-        self.movie_dir = os.path.expanduser(config.FILE_TRANSFER_COMPLETE_DIR)
-        self.plex_local = None
-        self.logger = logger
-
-    def connect_plex(self):
-        self.logger.info('Connecting to Plex')
-        self.plex_local = plexutils.PlexSearch(
-            debug=self.debug,
-            auth_type=config.PLEX_AUTH_TYPE,
-            server=config.PLEX_SERVER_URL
-        )
-        self.plex_local.connect()
-
-        return
-
-    def notify_slack(self, message, room='me'):
-        self.logger.info(message)
-        notification = SlackSender(room=room, debug=self.debug)
-        notification.set_simple_message(
-            message=message, title='Plex Syncer Notification')
-        notification.send()
-
-    def run_sync_flow(self):
-        self.connect_plex()
-        if not self.plex_local.in_plex_library(guid=self.imdb_guid):
-            message = 'Movie not in library: [{}] {} - {}'.format(
-                self.imdb_guid, self.title_year, self.rem_path)
-            self.notify_slack(message)
-
-            syncer = serverutils.FileSyncer(
-                remote_file=self.rem_path,
-                destination=self.movie_dir)
-            success, file_path = syncer.get_remote_file()
-
-            if not file_path or not success:
-                message = 'Transfer failed: {}'.format(message)
-                self.logger.error(message)
-            else:
-                message = 'Download complete: {} - {}'.format(
-                    self.title_year, file_path)
-            self.notify_slack(message)
-        else:
-            self.logger.info('Movie already in library: [{}] {}\n{}'.format(
-                self.imdb_guid, self.title_year, self.rem_path))
+_db = db_utils.FileTransferDB()
 
 
 def validate_movie(imdb_guid, debug=False):
@@ -92,7 +37,7 @@ def validate_movie(imdb_guid, debug=False):
 
 def post_new_movie_to_syncer(imdb_guid, path):
     movie_data = json.dumps(
-        {'id': imdb_guid, 'path': path}
+        {'guid': imdb_guid, 'path': path}
     )
     url = config.REMOTE_LISTENER + _NEW_MOVIE_ENDPOINT
     logger.debug('Posting request to: {}'.format(url))
@@ -111,29 +56,17 @@ def run_server(debug=False):
 
     @app.route(_NEW_MOVIE_ENDPOINT, methods=['POST'])
     def sync_new_movie():
-
-        def sync_movie(syncer):
-            syncer.run_sync_flow()
-
         r = request.get_json()
         logger.info('Request: {}'.format(r), stdout=True)
 
-        imdb_guid = r["id"]
-        path = r["path"]
+        imdb_guid = r['guid']
+        remote_path = r['path']
         status, title = validate_movie(imdb_guid, debug=debug)
 
         if status == 200:
-            msg = '[{}] {} - path: {}'.format(imdb_guid, title, path)
+            msg = '[{}] {} - path: {}'.format(imdb_guid, title, remote_path)
             logger.info('Result: {} - {}'.format(status, msg))
-            syncer = PlexSyncer(
-                imdb_guid=imdb_guid,
-                rem_path=path,
-                title=title
-            )
-
-            thread = threading.Thread(target=sync_movie,
-                                      kwargs={str('syncer'): syncer})
-            thread.start()
+            _db.insert(guid=imdb_guid, remote_path=remote_path)
 
         else:
             msg = 'Unable to locate in OMDb: {}'.format(imdb_guid)

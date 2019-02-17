@@ -6,9 +6,14 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import time
 import pysftp
+from Queue import Queue
+from threading import Thread
 from minibot import logger
 from minibot.utilities import utils
+# from minibot.utilities import db_utils
+from minibot.utilities import plexutils
 from minibot.utilities import config
+from slackannounce.utils import SlackSender
 
 
 class FileSyncer(object):
@@ -27,6 +32,7 @@ class FileSyncer(object):
 
         self.logger = logger
         self.transfer_successful = False
+        self.max_concurrent_transfers = 1
 
         self._local_prv_key = os.path.expanduser(
             os.path.join("~/.ssh", "id_rsa"))
@@ -170,3 +176,114 @@ class FileSyncer(object):
         self._prev_completed_bytes = complete
 
         return transfer_rate
+
+
+class PlexSyncer(object):
+    def __init__(self, imdb_guid=None, remote_path=None, debug=False,
+                 logger=logger, **kwargs):
+        self.kwargs = kwargs
+        self.debug = debug
+        self.imdb_guid = imdb_guid
+        self.remote_path = remote_path
+        self.title_year = None
+        self.movie_dir = os.path.expanduser(config.FILE_TRANSFER_COMPLETE_DIR)
+        self.plex_local = None
+        self.logger = logger
+
+    def connect_plex(self):
+        self.logger.info('Connecting to Plex')
+        self.plex_local = plexutils.PlexSearch(
+            debug=self.debug,
+            auth_type=config.PLEX_AUTH_TYPE,
+            server=config.PLEX_SERVER_URL
+        )
+        self.plex_local.connect()
+
+        return
+
+    def notify_slack(self, message, room='me'):
+        self.logger.info(message)
+        notification = SlackSender(room=room, debug=self.debug)
+        notification.set_simple_message(
+            message=message, title='Plex Syncer Notification')
+        notification.send()
+
+    def run_sync_flow(self):
+        self.connect_plex()
+        if not self.plex_local.in_plex_library(guid=self.imdb_guid):
+            message = 'Movie not in library: [{}] {} - {}'.format(
+                self.imdb_guid, self.title_year, self.remote_path)
+            self.notify_slack(message)
+
+            syncer = FileSyncer(
+                remote_file=self.remote_path,
+                destination=self.movie_dir)
+            success, file_path = syncer.get_remote_file()
+
+            if not file_path or not success:
+                message = 'Transfer failed: {}'.format(message)
+                self.logger.error(message)
+            else:
+                message = 'Download complete: {} - {}'.format(
+                    self.title_year, file_path)
+            self.notify_slack(message)
+        else:
+            success = True
+            self.logger.info('Movie already in library: [{}] {}\n{}'.format(
+                self.imdb_guid, self.title_year, self.remote_path))
+
+        return success
+
+
+class TransferQueue(object):
+    def __init__(self, db):
+        self.queue = Queue()
+        self.db = db
+
+    def _worker(self):
+        while not self.queue.empty():
+            logger.info('Queued items: {}'.format(self.queue.unfinished_tasks))
+            q_guid = self.queue.get()
+            logger.info('Starting download: {}'.format(q_guid))
+            queued_movie_dict = self.db.row_to_dict(self.db.select_guid(q_guid))
+            logger.debug('Starting: {}'.format(q_guid))
+            syncer = PlexSyncer(
+                imdb_guid=q_guid,
+                remote_path=queued_movie_dict['remote_path']
+            )
+            successful = syncer.run_sync_flow()
+            if successful:
+                self.db.mark_complete(q_guid)
+            else:
+                self.db.mark_unqueued_incomplete(q_guid)
+
+            self.queue.task_done()
+            logger.info('Completed download: {}'.format(q_guid))
+
+        return
+
+    def add_item(self, item, **kwargs):
+        logger.debug('Enqueuing: {}'.format(item))
+        self.queue.put(item, **kwargs)
+
+    def start(self):
+        self._worker()
+
+        return
+
+
+def transfer_queue_loop(db):
+    cont = True
+    q = TransferQueue(db)
+    while cont:
+        unqueued = db.select_all_unqueued_movies()
+        for unqueued_row in unqueued:
+            unqueued_dict = db.row_to_dict(unqueued_row)
+            guid = unqueued_dict['guid']
+            q.add_item(guid)
+
+        print(' * START QUEUE *')
+        q.start()
+
+        print('NO MORE')
+        cont = False
