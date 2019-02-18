@@ -34,7 +34,6 @@ class FileTransferDB(object):
     def _select_movie(self, query):
         query_sql = 'SELECT * FROM {} WHERE {}'.format(
             self.table_name, query)
-        print('query: {}'.format(query_sql))
         with sql.connect(self.db_path) as con:
             cur = con.cursor()
             cur.execute(query_sql)
