@@ -7,10 +7,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import time
 import pysftp
 from Queue import Queue
-from threading import Thread
 from minibot import logger
 from minibot.utilities import utils
-# from minibot.utilities import db_utils
 from minibot.utilities import plexutils
 from minibot.utilities import config
 from slackannounce.utils import SlackSender
@@ -260,6 +258,7 @@ class TransferQueue(object):
             self.queue.task_done()
             logger.info('Completed download: {}'.format(q_guid))
 
+        logger.debug('Queue empty')
         return
 
     def add_item(self, item, **kwargs):
@@ -276,16 +275,12 @@ def transfer_queue_loop(db):
     cont = True
     q = TransferQueue(db)
     while cont:
-        logger.debug('Checking queue...')
         unqueued = db.select_all_unqueued_movies()
         for unqueued_row in unqueued:
             unqueued_dict = db.row_to_dict(unqueued_row)
             guid = unqueued_dict['guid']
             q.add_item(guid)
 
-        print(' * START QUEUE *')
         q.start()
-
-        logger.debug('Queue empty')
         time.sleep(10)
         # cont = False
