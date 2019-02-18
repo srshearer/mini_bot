@@ -156,26 +156,66 @@ class PlexSearch(object):
 
 
 def omdb_guid_search(imdb_guid, debug=False):
-    """Queries OMDb.org for movie information using an IMDb guid."""
+    """Querie OMDb.org for movie information using a provided IMDb guid and
+    return the response.
+    Requires: imdb_guid(str)
+    Returns url(str)
+    """
 
-    def _get_omdb_url(imdb_guid):
-        """Builds a query url for OMDb using a provided IMDb guid and
-        returns the response.
-        Requires: imdb_guid(str) -
-        Returns url(str)
-        """
-        base_url = 'http://www.omdbapi.com/'
-        query = '?i={}&plot=short'.format(imdb_guid)
-        api_key = '&apikey={}'.format(config.OMDB_API_KEY)
-
-        omdb_url = '{}{}{}'.format(base_url, query, api_key)
-
-        return omdb_url
+    query = '?i={}&plot=short'.format(imdb_guid)
 
     if debug:
         logger.debug('Searching OMDb: {}'.format(imdb_guid))
 
-    omdb_query_url = _get_omdb_url(imdb_guid)
+    status, response_json = _query_omdb(query)
+
+    return status, response_json
+
+    # omdb_query_url = _get_omdb_url(imdb_guid)
+    # if debug:
+    #     logger.debug('Query url: {}'.format(omdb_query_url))
+    #
+    # response = requests.get(
+    #     omdb_query_url,
+    #     headers={'Content-Type': 'application/json'}
+    # )
+    #
+    # if response.status_code != 200:
+    #     logger.error('OMDb responded with an error')
+    #     logger.debug('Response: [{}] - {}'.format(
+    #         response.status_code, response.text))
+    #
+    # elif debug:
+    #     logger.debug('Response: [{}] - {}'.format(
+    #         response.status_code, response.text))
+    #
+    # return response.status_code, json.loads(response.text)
+
+
+def omdb_title_search(title, year=None, debug=False):
+    """Queries OMDb.org for movie information using a title and
+    optionally, a year.
+    Requires: title(str) - movie title
+              year(str)  - year movie was made (optional)
+    Returns url(str)
+    """
+    query = '?t={}'.format(title)
+    if year:
+        query = query + '&y={}'.format(year)
+    query = query + '&plot=short'
+
+    if debug:
+        logger.debug('Searching OMDb: {} {}'.format(title, year))
+
+    status, response_json = _query_omdb(query)
+
+    return status, response_json
+
+
+def _query_omdb(query, debug=False):
+    omdb_query_url = 'http://www.omdbapi.com/{}&apikey={}'.format(
+        query, config.OMDB_API_KEY)
+
     if debug:
         logger.debug('Query url: {}'.format(omdb_query_url))
 

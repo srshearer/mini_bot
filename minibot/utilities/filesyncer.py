@@ -261,9 +261,10 @@ class TransferQueue(object):
         logger.debug('Queue empty')
         return
 
-    def add_item(self, item, **kwargs):
-        logger.debug('Enqueuing: {}'.format(item))
-        self.queue.put(item, **kwargs)
+    def add_item(self, guid, **kwargs):
+        logger.debug('Enqueuing: {}'.format(guid))
+        self.queue.put(guid, **kwargs)
+        self.db.mark_queued(guid)
 
     def start(self):
         if not self.queue.empty():
@@ -273,6 +274,12 @@ class TransferQueue(object):
 
 
 def transfer_queue_loop(db):
+    ''' Instantiate the TransferQueue using the supplied database, then
+    continuously check for unqueued items in the database, add them to the
+    queue, and empty the queue.
+    :param db:
+    :return:
+    '''
     cont = True
     q = TransferQueue(db)
     while cont:
