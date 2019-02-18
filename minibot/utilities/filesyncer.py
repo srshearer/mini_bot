@@ -266,7 +266,8 @@ class TransferQueue(object):
         self.queue.put(item, **kwargs)
 
     def start(self):
-        self._worker()
+        if not self.queue.empty():
+            self._worker()
 
         return
 
