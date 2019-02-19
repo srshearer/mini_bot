@@ -7,10 +7,6 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import argparse
 from minibot import logger
-from minibot.utilities import plexsyncer
-from minibot.utilities import plexutils
-from minibot.utilities import filesyncer
-from minibot.utilities import db_utils
 
 
 def parse_arguments():
@@ -45,15 +41,20 @@ def main():
 
     if args.sync_listen:
         logger.info('Starting listener')
-        plexsyncer.run_server(debug=args.debug)
+        from minibot.utilities import server
+        server.run_server(debug=args.debug)
     elif args.path and args.imdb_guid:
         logger.info('Sending sync request')
-        plexsyncer.post_new_movie_to_syncer(
+        from minibot.utilities import server
+        server.post_new_movie_to_syncer(
                 imdb_guid=args.imdb_guid, path=args.path)
     elif args.imdb_guid:
         logger.info('Sending new movie notification')
+        from minibot.utilities import plexutils
         plexutils.send_new_movie_slack_notification(args)
     elif args.transfer:
+        logger.info('Starting queue...')
+        from minibot.utilities import db_utils, filesyncer
         filesyncer.transfer_queue_loop(db_utils.FileTransferDB())
     else:
         parser.print_help()

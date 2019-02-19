@@ -206,8 +206,21 @@ class PlexSyncer(object):
             message=message, title='Plex Syncer Notification')
         notification.send()
 
+    def get_title_year(self, imdb_guid=None):
+        if not imdb_guid:
+            imdb_guid = self.imdb_guid
+        status, result = plexutils.omdb_guid_search(
+            imdb_guid=imdb_guid)
+        try:
+            title_year = '{} ({})'.format(result["Title"], result["Year"])
+        except Exception:
+            title_year = None
+
+        return title_year
+
     def run_sync_flow(self):
         self.connect_plex()
+        self.title_year = self.get_title_year()
         if not self.plex_local.in_plex_library(guid=self.imdb_guid):
             message = 'Movie not in library: [{}] {} - {}'.format(
                 self.imdb_guid, self.title_year, self.remote_path)

@@ -171,26 +171,6 @@ def omdb_guid_search(imdb_guid, debug=False):
 
     return status, response_json
 
-    # omdb_query_url = _get_omdb_url(imdb_guid)
-    # if debug:
-    #     logger.debug('Query url: {}'.format(omdb_query_url))
-    #
-    # response = requests.get(
-    #     omdb_query_url,
-    #     headers={'Content-Type': 'application/json'}
-    # )
-    #
-    # if response.status_code != 200:
-    #     logger.error('OMDb responded with an error')
-    #     logger.debug('Response: [{}] - {}'.format(
-    #         response.status_code, response.text))
-    #
-    # elif debug:
-    #     logger.debug('Response: [{}] - {}'.format(
-    #         response.status_code, response.text))
-    #
-    # return response.status_code, json.loads(response.text)
-
 
 def omdb_title_search(title, year=None, debug=False):
     """Queries OMDb.org for movie information using a title and
