@@ -7,14 +7,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import json
 import requests
 from flask import Flask, request
-from minibot import logger
-from minibot.utilities import config
-from minibot.utilities import plexutils
-from minibot.utilities import db_utils
+from mini_bot.minibot import logger
+from mini_bot.minibot.utilities import config
+from mini_bot.minibot.utilities import plexutils
+from mini_bot.minibot.utilities import db_utils
 
 
 _NEW_MOVIE_ENDPOINT = '/new_movie/'
-_db = db_utils.FileTransferDB()
 
 
 def validate_movie(imdb_guid, debug=False):
@@ -35,7 +34,7 @@ def validate_movie(imdb_guid, debug=False):
     return status, msg
 
 
-def post_new_movie_to_syncer(imdb_guid, path):
+def post_new_movie_to_syncer(imdb_guid, path, timeout=60):
     movie_data = json.dumps(
         {'guid': imdb_guid, 'path': path}
     )
@@ -44,15 +43,23 @@ def post_new_movie_to_syncer(imdb_guid, path):
 
     try:
         r = requests.post(
-            url, movie_data, headers={'Content-Type': 'application/json'})
+            url, movie_data,
+            headers={'Content-Type': 'application/json'},
+            timeout=timeout)
         logger.info('Response: [{}] {}'.format(r.status_code, r.text))
 
     except requests.exceptions.ConnectionError:
         logger.error('Response: [404] Server not found')
 
+    except requests.exceptions.ReadTimeout:
+        logger.error(
+            '[503] Request timed out. No response after {} seconds'.format(
+                timeout))
+
 
 def run_server(debug=False):
     app = Flask(__name__)
+    _db = db_utils.FileTransferDB()
 
     @app.route(_NEW_MOVIE_ENDPOINT, methods=['POST'])
     def sync_new_movie():

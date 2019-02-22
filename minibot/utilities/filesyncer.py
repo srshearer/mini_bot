@@ -3,14 +3,14 @@
 from __future__ import print_function, unicode_literals, absolute_import
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import time
 import pysftp
 from Queue import Queue
-from minibot import logger
-from minibot.utilities import utils
-from minibot.utilities import plexutils
-from minibot.utilities import config
+from mini_bot.minibot import logger
+from mini_bot.minibot.utilities import utils
+from mini_bot.minibot.utilities import plexutils
+from mini_bot.minibot.utilities import config
 from slackannounce.utils import SlackSender
 
 
@@ -296,12 +296,23 @@ def transfer_queue_loop(db):
     cont = True
     q = TransferQueue(db)
     while cont:
-        unqueued = db.select_all_unqueued_movies()
-        for unqueued_row in unqueued:
-            unqueued_dict = db.row_to_dict(unqueued_row)
-            guid = unqueued_dict['guid']
-            q.add_item(guid)
+        try:
+            unqueued = db.select_all_unqueued_movies()
+            for unqueued_row in unqueued:
+                unqueued_dict = db.row_to_dict(unqueued_row)
+                guid = unqueued_dict['guid']
+                q.add_item(guid)
 
-        q.start()
-        time.sleep(10)
-        # cont = False
+            q.start()
+            time.sleep(10)
+            # cont = False
+
+        except KeyboardInterrupt:
+            incomplete_rows = db.select_all_queued_incomplete()
+
+            for i in incomplete_rows:
+                guid = db.row_to_dict(i)['guid']
+                logger.debug('guid: {} - row: {}'.format(guid, i))
+                db.mark_unqueued_incomplete(guid)
+
+            sys.exit(0)

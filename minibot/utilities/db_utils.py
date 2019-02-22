@@ -3,10 +3,15 @@
 import os.path
 import sqlite3 as sql
 
-
 # database info
-_db_path = './utilities/remote_movies.db'
-_schema_path = './utilities/schema.sql'
+_database = 'remote_movies.db'
+_schema = 'schema.sql'
+
+
+_db_path = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), _database))
+_schema_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), _schema))
 _table_name = 'remote_movies'
 
 
@@ -62,6 +67,13 @@ class FileTransferDB(object):
     def select_all_unqueued_movies(self):
         unqueued_query = 'queued = 0 AND complete = 0'
         cur = self._select_movie(unqueued_query)
+        rows = cur.fetchall()
+
+        return rows
+
+    def select_all_queued_incomplete(self):
+        incomplete_query = 'queued = 1 AND complete = 0'
+        cur = self._select_movie(incomplete_query)
         rows = cur.fetchall()
 
         return rows
