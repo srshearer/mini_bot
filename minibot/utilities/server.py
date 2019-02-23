@@ -1,16 +1,13 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
-import sys
-import os.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
 import requests
 from flask import Flask, request
-from mini_bot.minibot import logger
-from mini_bot.minibot.utilities import config
-from mini_bot.minibot.utilities import plexutils
-from mini_bot.minibot.utilities import db_utils
+from minibot import logger
+from minibot.utilities import config
+from minibot.utilities import plexutils
+from minibot.utilities import db_utils
 
 
 _NEW_MOVIE_ENDPOINT = '/new_movie/'

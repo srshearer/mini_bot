@@ -1,9 +1,8 @@
-import sys
+# import sys
 import os.path
 # import logging
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-from mini_bot.minibot.utilities import config
-from mini_bot.minibot.utilities import utils
+from minibot.utilities import config
+from minibot.utilities import utils
 
 logfile = os.path.abspath(
     os.path.join(os.path.dirname(__file__), config.LOG_FILE))

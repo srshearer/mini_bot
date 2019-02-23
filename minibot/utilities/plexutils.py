@@ -1,15 +1,12 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
-import sys
-import os.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import re
 import json
 import requests
-from mini_bot.minibot import logger
-from mini_bot.minibot.utilities import config
-from mini_bot.minibot.utilities import utils
+from minibot import logger
+from minibot.utilities import config
+from minibot.utilities import utils
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 from slackannounce.utils import SlackSender, text_color

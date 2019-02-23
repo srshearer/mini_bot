@@ -3,14 +3,13 @@
 from __future__ import print_function, unicode_literals, absolute_import
 import os
 import sys
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import time
 import pysftp
 from Queue import Queue
-from mini_bot.minibot import logger
-from mini_bot.minibot.utilities import utils
-from mini_bot.minibot.utilities import plexutils
-from mini_bot.minibot.utilities import config
+from minibot import logger
+from minibot.utilities import utils
+from minibot.utilities import plexutils
+from minibot.utilities import config
 from slackannounce.utils import SlackSender
 
 

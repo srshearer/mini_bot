@@ -2,11 +2,11 @@
 # encoding: utf-8
 import os.path
 import sqlite3 as sql
+import inspect
 
 # database info
 _database = 'remote_movies.db'
 _schema = 'schema.sql'
-
 
 _db_path = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), _database))

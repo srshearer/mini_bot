@@ -1,13 +1,8 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
-import sys
-import os.path
 import argparse
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-# from mini_bot import minibot
-from mini_bot.minibot import logger
-# from minibot import logger
+from minibot import logger
 
 
 def parse_arguments():
@@ -42,20 +37,20 @@ def main():
 
     if args.sync_listen:
         logger.info('Starting listener')
-        from mini_bot.minibot.utilities import server
+        from minibot.utilities import server
         server.run_server(debug=args.debug)
     elif args.path and args.imdb_guid:
         logger.info('Sending sync request')
-        from mini_bot.minibot.utilities import server
+        from minibot.utilities import server
         server.post_new_movie_to_syncer(
                 imdb_guid=args.imdb_guid, path=args.path)
     elif args.imdb_guid:
         logger.info('Sending new movie notification')
-        from mini_bot.minibot.utilities import plexutils
+        from minibot.utilities import plexutils
         plexutils.send_new_movie_slack_notification(args)
     elif args.transfer:
         logger.info('Starting queue...')
-        from mini_bot.minibot.utilities import db_utils, filesyncer
+        from minibot.utilities import db_utils, filesyncer
         filesyncer.transfer_queue_loop(db_utils.FileTransferDB())
     else:
         parser.print_help()
