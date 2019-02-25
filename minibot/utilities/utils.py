@@ -51,7 +51,6 @@ class Logger(object):
     @staticmethod
     def _create_log_file(file_path=None):
         if not file_path:
-            # this_file = os.path.basename(__file__).split(os.path.extsep)[0]
             file_name = 'log{}log'.format(os.path.extsep)
             dir_path = os.path.abspath('.')
             file_path = os.path.join(dir_path, file_name)
@@ -74,7 +73,6 @@ class Logger(object):
                     raise IOError('Could not create file: '
                                   '{} \n{}'.format(file_path, e))
 
-        # print('Log file: {}'.format(os.path.abspath(file_path)))
         return file_path
 
 
