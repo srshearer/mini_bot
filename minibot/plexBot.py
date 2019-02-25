@@ -63,7 +63,7 @@ def main():
             os.path.join(os.path.dirname(os.path.dirname(__file__)), _database))
         _schema = 'schema.sql'
         _schema_path = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), _schema))
+            os.path.dirname(__file__), 'utilities', _schema))
 
         filesyncer.transfer_queue_loop(
             db_utils.FileTransferDB(db_path=_db_path, schema_path=_schema_path))
