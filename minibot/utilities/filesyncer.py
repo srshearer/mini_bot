@@ -112,6 +112,26 @@ class FileSyncer(object):
             except OSError as e:
                 self.logger.error('Failed to move file \n{}'.format(e))
                 self.final_file_path = None
+
+            try:
+                if self.final_file_path:
+                    logger.debug('Setting file permissions')  # ToDo: Remove debug log
+                    file_stat_before = os.stat(self.final_file_path)
+                    file_mode_before = file_stat_before.st_mode
+                    logger.debug('File permissions before: {}'.format(file_mode_before))  # ToDo: Remove debug log
+
+                    os.chmod(self.final_file_path, 0775)
+
+                    file_stat_after = os.stat(self.final_file_path)
+                    file_mode_after = file_stat_after.st_mode
+                    logger.debug('File permissions after: {}'.format(file_mode_after))  # ToDo: Remove debug log
+
+                else:
+                    logger.error('No file path!')
+
+            except Exception as e:
+                logger.error('Failed to set file permissions: {}'.format(e))
+
         else:
             self.final_file_path = None
 
