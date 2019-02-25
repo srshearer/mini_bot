@@ -1,5 +1,6 @@
 #!/usr/bin/python -u
 # encoding: utf-8
+import os.path
 import sqlite3 as sql
 
 # database info
@@ -7,11 +8,15 @@ _database = 'remote_movies.db'
 _schema = 'schema.sql'
 _table_name = 'remote_movies'
 
+_db_path = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), _database))
+_schema_path = os.path.abspath(os.path.join(os.path.dirname(__file__), _schema))
+
 
 class FileTransferDB(object):
     def __init__(self,
-                 db_path=None,
-                 schema_path=None,
+                 db_path=_db_path,
+                 schema_path=_schema_path,
                  table_name=_table_name):
         self.db_path = db_path
         self.schema_path = schema_path
@@ -19,9 +24,6 @@ class FileTransferDB(object):
         self._create_from_schema()
 
     def _create_from_schema(self):
-        if not self.db_path or not self.schema_path:
-            return
-
         connection = sql.connect(self.db_path)
         cur = connection.cursor()
         with open(self.schema_path) as schema:
