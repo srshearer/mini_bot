@@ -2,7 +2,6 @@
 # encoding: utf-8
 import os.path
 import sqlite3 as sql
-import inspect
 
 # database info
 _database = 'remote_movies.db'

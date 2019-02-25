@@ -1,6 +1,7 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
+import os.path
 import argparse
 from minibot import logger
 
@@ -51,7 +52,11 @@ def main():
     elif args.transfer:
         logger.info('Starting queue...')
         from minibot.utilities import db_utils, filesyncer
-        filesyncer.transfer_queue_loop(db_utils.FileTransferDB())
+        _database = 'remote_movies.db'
+        _db_path = os.path.abspath(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), _database))
+        filesyncer.transfer_queue_loop(
+            db_utils.FileTransferDB(db_path=_db_path))
     else:
         parser.print_help()
 
