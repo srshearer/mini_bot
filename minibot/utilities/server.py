@@ -4,10 +4,10 @@ from __future__ import print_function, unicode_literals, absolute_import
 import json
 import requests
 from flask import Flask, request
-from minibot import logger
-from minibot.utilities import config
-from minibot.utilities import plexutils
-from minibot.utilities import db_utils
+from utilities import config
+from utilities import plexutils
+from utilities import db_utils
+from utilities import logger
 
 
 _NEW_MOVIE_ENDPOINT = '/new_movie/'

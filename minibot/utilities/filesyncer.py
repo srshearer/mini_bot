@@ -6,10 +6,10 @@ import sys
 import time
 import pysftp
 from Queue import Queue
-from minibot import logger
-from minibot.utilities import utils
-from minibot.utilities import plexutils
-from minibot.utilities import config
+from utilities import utils
+from utilities import config
+from utilities import logger
+from utilities import plexutils
 from slackannounce.utils import SlackSender
 
 

@@ -1,30 +1,30 @@
 #!/usr/bin/python -u
 # encoding: utf-8
-import os.path
 import sqlite3 as sql
 
 # database info
 _database = 'remote_movies.db'
 _schema = 'schema.sql'
-
-_db_path = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), _database))
-_schema_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), _schema))
 _table_name = 'remote_movies'
 
 
 class FileTransferDB(object):
-    def __init__(self, db_path=_db_path, table_name=_table_name):
-        self.db_path = os.path.abspath(os.path.expanduser(db_path))
+    def __init__(self,
+                 db_path=None,
+                 schema_path=None,
+                 table_name=_table_name):
+        self.db_path = db_path
+        self.schema_path = schema_path
         self.table_name = table_name
-        self._schema_path = _schema_path
         self._create_from_schema()
 
     def _create_from_schema(self):
+        if not self.db_path or not self.schema_path:
+            return
+
         connection = sql.connect(self.db_path)
         cur = connection.cursor()
-        with open(self._schema_path) as schema:
+        with open(self.schema_path) as schema:
             cur.executescript(schema.read())
 
     def insert(self, guid, remote_path):
