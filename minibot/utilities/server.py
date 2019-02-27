@@ -6,7 +6,7 @@ import requests
 from flask import Flask, request
 from utilities import config
 from utilities import logger
-from utilities import db_utils
+from utilities import dbutils
 from utilities import plexutils
 from utilities.filesyncer import TransferQueue
 
@@ -57,7 +57,7 @@ def post_new_movie_to_syncer(imdb_guid, path, timeout=60):
 
 def run_server(debug=False):
     app = Flask(__name__)
-    _db = db_utils.FileTransferDB()
+    _db = dbutils.FileTransferDB()
     q = TransferQueue(_db)
 
     @app.route(_NEW_MOVIE_ENDPOINT, methods=['POST'])

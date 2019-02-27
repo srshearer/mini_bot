@@ -28,13 +28,12 @@ class PlexSearch(object):
         - auth_type (user or token): choose authentication method
     """
     def __init__(self, debug=False, auth_type=config.PLEX_AUTH_TYPE,
-                 server=config.PLEX_SERVER_URL, logger=logger, **kwargs):
+                 server=config.PLEX_SERVER_URL, **kwargs):
         self.kwargs = kwargs
         self.debug = debug
         self.auth_type = auth_type
         self.plex_server = server
         self.plex = None
-        self.logger = logger
 
     def connect(self, auth_type=None):
         """
@@ -43,7 +42,7 @@ class PlexSearch(object):
         if not auth_type:
             auth_type = self.auth_type
 
-        self.logger.debug('Connecting to Plex: {}'.format(auth_type))
+        logger.debug('Connecting to Plex: {}'.format(auth_type))
 
         if auth_type == 'user':
             plex = self._plex_account()
@@ -54,7 +53,7 @@ class PlexSearch(object):
                 'Invalid Plex connection type: {}'.format(self.auth_type))
 
         self.plex = plex
-        self.logger.debug('Connected: {}'.format(self.plex_server))
+        logger.debug('Connected: {}'.format(self.plex_server))
 
         return plex
 
@@ -112,14 +111,14 @@ class PlexSearch(object):
 
         found_movies = []
         if not guid and not title:
-            self.logger.error(
+            logger.error(
                 'Error: plexutils.movie_search() requires guid or title.')
             return found_movies
 
         movies = self.plex.library.section('Movies')
 
         if self.debug:
-            self.logger.debug('Searching Plex: {}'.format(guid))
+            logger.debug('Searching Plex: {}'.format(guid))
 
         if guid:
             for m in movies.search(guid=guid):

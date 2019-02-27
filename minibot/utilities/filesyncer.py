@@ -2,7 +2,6 @@
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
 import os
-import sys
 import time
 import pysftp
 from Queue import Queue
@@ -45,7 +44,7 @@ class FileSyncer(object):
 
         if not self.remote_file:
             logger.error('No remote file!', stdout=True)
-            sys.exit(1)
+            return None
 
         self.filename = os.path.basename(self.remote_file)
         self.final_file_path = os.path.join(
@@ -118,16 +117,18 @@ class FileSyncer(object):
 
             try:
                 if self.final_file_path:
-                    logger.debug('Setting file permissions')  # ToDo: Remove debug log
+                    logger.debug('Setting file permissions')
                     file_stat_before = os.stat(self.final_file_path)
                     file_mode_before = file_stat_before.st_mode
-                    logger.debug('File permissions before: {}'.format(file_mode_before))  # ToDo: Remove debug log
+                    logger.debug('File permissions before: {}'.format(
+                        file_mode_before))
 
                     os.chmod(self.final_file_path, 0775)
 
                     file_stat_after = os.stat(self.final_file_path)
                     file_mode_after = file_stat_after.st_mode
-                    logger.debug('File permissions after: {}'.format(file_mode_after))  # ToDo: Remove debug log
+                    logger.debug('File permissions after: {}'.format(
+                        file_mode_after))
 
                 else:
                     logger.error('No file path!')
@@ -233,7 +234,8 @@ class PlexSyncer(object):
             imdb_guid=imdb_guid)
         try:
             title_year = '{} ({})'.format(result["Title"], result["Year"])
-        except Exception:
+        except Exception as e:
+            logger.warning('Failed to determine title and year: {}'.format(e))
             title_year = None
 
         return title_year
@@ -300,13 +302,13 @@ class TransferQueue(utils.StoppableThread):
         self.db.mark_queued(guid)
 
     def run(self, update_frequency=5):
-        ''' Instantiate the TransferQueue using the supplied database, then
+        """ Instantiate the TransferQueue using the supplied database, then
         continuously check for unqueued items in the database, add them to the
         queue, and empty the queue.
         :param update_frequency: How frequently in seconds to check the db
             for items. (defaults to 5 seconds)
         :return:
-        '''
+        """
         try:
             while not self.stopped():
                 unqueued = self.db.select_all_unqueued_movies()

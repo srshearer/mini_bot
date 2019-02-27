@@ -31,8 +31,8 @@ class FileTransferDB(object):
 
     def insert(self, guid, remote_path):
         with sql.connect(self.db_path) as con:
-            add_movie_sql = 'INSERT INTO {} (guid, remote_path) VALUES (?, ?)'.format(
-                self.table_name)
+            add_movie_sql = 'INSERT INTO {} (guid, remote_path) ' \
+                            'VALUES (?, ?)'.format(self.table_name)
             cur = con.cursor()
             cur.execute(add_movie_sql, (guid, remote_path))
             con.commit()
