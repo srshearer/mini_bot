@@ -5,9 +5,10 @@ import json
 import requests
 from flask import Flask, request
 from utilities import config
-from utilities import plexutils
-from utilities import db_utils
 from utilities import logger
+from utilities import db_utils
+from utilities import plexutils
+from utilities.filesyncer import TransferQueue
 
 
 _NEW_MOVIE_ENDPOINT = '/new_movie/'
@@ -57,6 +58,7 @@ def post_new_movie_to_syncer(imdb_guid, path, timeout=60):
 def run_server(debug=False):
     app = Flask(__name__)
     _db = db_utils.FileTransferDB()
+    q = TransferQueue(_db)
 
     @app.route(_NEW_MOVIE_ENDPOINT, methods=['POST'])
     def sync_new_movie():
@@ -78,7 +80,19 @@ def run_server(debug=False):
 
         return msg, status
 
-    if debug:
-        app.run(port=5000, debug=True)
-    else:
-        app.run(host='0.0.0.0', port=5000)
+    try:
+        q.start()
+        if debug:
+            app.run(port=5000, debug=True)
+        else:
+            app.run(host='0.0.0.0', port=5000)
+
+    except KeyboardInterrupt:
+        logger.info('Stopping server and transfer queue.')
+
+    except Exception as e:
+        logger.error('Unknown exception: \n{}'.format(e))
+
+    finally:
+        logger.info('Stopping server and transfer queue')
+        q.stop()

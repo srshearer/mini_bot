@@ -27,7 +27,6 @@ class FileSyncer(object):
         self._tmp_dir = os.path.expanduser(config.IN_PROGRESS_DIR)
         self.destination_dir = os.path.expanduser(destination)
 
-        self.logger = logger
         self.transfer_successful = False
         self.max_concurrent_transfers = 1
 
@@ -45,7 +44,7 @@ class FileSyncer(object):
             self.remote_file = remote_file
 
         if not self.remote_file:
-            self.logger.error('No remote file!', stdout=True)
+            logger.error('No remote file!', stdout=True)
             sys.exit(1)
 
         self.filename = os.path.basename(self.remote_file)
@@ -55,15 +54,21 @@ class FileSyncer(object):
         return self.remote_file
 
     def get_remote_file(self):
+        success = False
         if not self.remote_file:
-            self.logger.error(
+            logger.error(
                 'Remote file not set! Please set FileSyncer.remote_file')
         else:
             self._set_file_paths(self.remote_file)
-            self.logger.info('Copying from remote server: {}@{}:\'{}\''.format(
+            logger.info('Copying from remote server: {}@{}:\'{}\''.format(
                 self.remote_user, self.remote_server, self.remote_file))
-            self.logger.debug('Temp destination: {}'.format(self._tmp_dir))
-            success = self._transfer_file()
+            logger.debug('Temp destination: {}'.format(self._tmp_dir))
+            try:
+                success = self._transfer_file()
+            except Exception as e:
+                logger.error('Transfer failed after 3 attempts: {}'.format(e))
+                pass
+
             if success:
                 self._move_file_to_destination()
                 print('Transfer successful: {}'.format(
@@ -71,8 +76,9 @@ class FileSyncer(object):
 
         return self.transfer_successful, self.final_file_path
 
-    @utils.retry(logger=logger)
+    @utils.retry(attempts=3, delay=3, logger=logger)
     def _transfer_file(self):
+        self.transfer_successful = False
         try:
             self._in_progress_file = os.path.join(
                 self._tmp_dir, 'IN_PROGRESS-' + self.filename)
@@ -83,14 +89,11 @@ class FileSyncer(object):
                 sftp.get(self.remote_file, self._in_progress_file,
                          callback=self._transfer_progress)
 
-        except Exception as e:
-            self.transfer_successful = False
-            self.logger.error(
-                'File transfer failed: {} \n{}'.format(self.filename, e))
+        except Exception:
             raise
 
         if self.transfer_successful:
-            self.logger.info('Transfer successful!')
+            logger.info('Transfer successful!')
 
         return self.transfer_successful
 
@@ -102,7 +105,7 @@ class FileSyncer(object):
         """
         if os.path.isfile(self._in_progress_file):
             try:
-                self.logger.info('Moving {} to {}'.format(
+                logger.info('Moving {} to {}'.format(
                     self.filename, self.destination_dir))
                 if not os.path.isdir(self.destination_dir):
                     os.mkdir(self.destination_dir)
@@ -110,7 +113,7 @@ class FileSyncer(object):
                 os.rename(self._in_progress_file, self.final_file_path)
 
             except OSError as e:
-                self.logger.error('Failed to move file \n{}'.format(e))
+                logger.error('Failed to move file \n{}'.format(e))
                 self.final_file_path = None
 
             try:
@@ -158,7 +161,7 @@ class FileSyncer(object):
         # log each N percentage exactly once where in is step
         if pct in range(101)[0::step] and pct not in self._seen_progress:
             rate = utils.convert_file_size(self._transfer_rate(complete))
-            self.logger.info(
+            logger.info(
                 'Transfer Progress: {}\t{}%  \t[ {} / {} ]\t{}/s'.format(
                     self.filename, pct, c, t, rate))
             self._seen_progress.append(pct)
@@ -170,7 +173,7 @@ class FileSyncer(object):
             duration = abs(
                 (self._transfer_end_time - self._transfer_start_time))
             rate = utils.convert_file_size((total / duration))
-            self.logger.info(
+            logger.info(
                 'Transfer completed in {} seconds [{}/s]'.format(
                     round(duration, 2), rate))
 
@@ -196,8 +199,7 @@ class FileSyncer(object):
 
 
 class PlexSyncer(object):
-    def __init__(self, imdb_guid=None, remote_path=None, debug=False,
-                 logger=logger, **kwargs):
+    def __init__(self, imdb_guid=None, remote_path=None, debug=False, **kwargs):
         self.kwargs = kwargs
         self.debug = debug
         self.imdb_guid = imdb_guid
@@ -205,10 +207,9 @@ class PlexSyncer(object):
         self.title_year = None
         self.movie_dir = os.path.expanduser(config.FILE_TRANSFER_COMPLETE_DIR)
         self.plex_local = None
-        self.logger = logger
 
     def connect_plex(self):
-        self.logger.info('Connecting to Plex')
+        logger.info('Connecting to Plex')
         self.plex_local = plexutils.PlexSearch(
             debug=self.debug,
             auth_type=config.PLEX_AUTH_TYPE,
@@ -219,7 +220,7 @@ class PlexSyncer(object):
         return
 
     def notify_slack(self, message, room='me'):
-        self.logger.info(message)
+        logger.info(message)
         notification = SlackSender(room=room, debug=self.debug)
         notification.set_simple_message(
             message=message, title='Plex Syncer Notification')
@@ -252,21 +253,22 @@ class PlexSyncer(object):
 
             if not file_path or not success:
                 message = 'Transfer failed: {}'.format(message)
-                self.logger.error(message)
+                logger.error(message)
             else:
                 message = 'Download complete: {} - {}'.format(
                     self.title_year, file_path)
             self.notify_slack(message)
         else:
             success = True
-            self.logger.info('Movie already in library: [{}] {}\n{}'.format(
+            logger.info('Movie already in library: [{}] {}\n{}'.format(
                 self.imdb_guid, self.title_year, self.remote_path))
 
         return success
 
 
-class TransferQueue(object):
-    def __init__(self, db):
+class TransferQueue(utils.StoppableThread):
+    def __init__(self, db, *args, **kwargs):
+        super(TransferQueue, self).__init__(*args, **kwargs)
         self.queue = Queue()
         self.db = db
 
@@ -276,7 +278,6 @@ class TransferQueue(object):
             q_guid = self.queue.get()
             logger.info('Starting download: {}'.format(q_guid))
             queued_movie_dict = self.db.row_to_dict(self.db.select_guid(q_guid))
-            logger.debug('Starting: {}'.format(q_guid))
             syncer = PlexSyncer(
                 imdb_guid=q_guid,
                 remote_path=queued_movie_dict['remote_path']
@@ -284,13 +285,13 @@ class TransferQueue(object):
             successful = syncer.run_sync_flow()
             if successful:
                 self.db.mark_complete(q_guid)
+                logger.info('Completed download: {}'.format(q_guid))
             else:
-                self.db.mark_unqueued_incomplete(q_guid)
+                self.db.remove_guid(q_guid)
+                logger.error('Failed download: {}'.format(q_guid))
 
             self.queue.task_done()
-            logger.info('Completed download: {}'.format(q_guid))
 
-        logger.debug('Queue empty')
         return
 
     def add_item(self, guid, **kwargs):
@@ -298,40 +299,46 @@ class TransferQueue(object):
         self.queue.put(guid, **kwargs)
         self.db.mark_queued(guid)
 
-    def start(self):
-        if not self.queue.empty():
-            self._worker()
-
-        return
-
-
-def transfer_queue_loop(db):
-    ''' Instantiate the TransferQueue using the supplied database, then
-    continuously check for unqueued items in the database, add them to the
-    queue, and empty the queue.
-    :param db:
-    :return:
-    '''
-    cont = True
-    q = TransferQueue(db)
-    while cont:
+    def run(self, update_frequency=5):
+        ''' Instantiate the TransferQueue using the supplied database, then
+        continuously check for unqueued items in the database, add them to the
+        queue, and empty the queue.
+        :param update_frequency: How frequently in seconds to check the db
+            for items. (defaults to 5 seconds)
+        :return:
+        '''
         try:
-            unqueued = db.select_all_unqueued_movies()
-            for unqueued_row in unqueued:
-                unqueued_dict = db.row_to_dict(unqueued_row)
-                guid = unqueued_dict['guid']
-                q.add_item(guid)
+            while not self.stopped():
+                unqueued = self.db.select_all_unqueued_movies()
+                for unqueued_row in unqueued:
+                    unqueued_dict = self.db.row_to_dict(unqueued_row)
+                    guid = unqueued_dict['guid']
+                    self.add_item(guid)
 
-            q.start()
-            time.sleep(10)
-            # cont = False
+                if self.queue.empty():
+                    time.sleep(update_frequency)
+                else:
+                    self._worker()
 
         except KeyboardInterrupt:
-            incomplete_rows = db.select_all_queued_incomplete()
+            logger.info('Exiting queue: KeyboardInterrupt')
+            pass
 
-            for i in incomplete_rows:
-                guid = db.row_to_dict(i)['guid']
-                logger.debug('guid: {} - row: {}'.format(guid, i))
-                db.mark_unqueued_incomplete(guid)
+        except Exception as e:
+            logger.error(e)
+            logger.warning('Exiting queue: Exception!')
+            pass
 
-            sys.exit(0)
+        finally:
+            self._cleanup()
+            logger.info('Exiting queue: clean')
+            return
+
+    def _cleanup(self):
+        logger.debug('Cleaning up')
+        incomplete_rows = self.db.select_all_queued_incomplete()
+        for i in incomplete_rows:
+            guid = self.db.row_to_dict(i)['guid']
+            logger.debug(
+                'Setting incomplete: guid: {}: row: {}'.format(guid, i))
+            self.db.mark_unqueued_incomplete(guid)

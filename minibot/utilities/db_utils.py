@@ -106,6 +106,12 @@ class FileTransferDB(object):
         self._update_status(guid, 'queued', 0)
         self._update_status(guid, 'complete', 0)
 
+    def remove_guid(self, guid):
+        with sql.connect(self.db_path) as con:
+            cur = con.cursor()
+            cur.execute("DELETE FROM {} WHERE guid=?".format(
+                self.table_name), (guid,))
+
     @staticmethod
     def row_to_dict(row):
         row_id, guid, remote_path, queued, complete = row
