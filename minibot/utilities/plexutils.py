@@ -372,12 +372,12 @@ def get_clean_imdb_guid(guid):
     Returns:
         - str(IMDb guid)
     """
-    result = re.search('.+//(.+)\?.+', guid)
+    matching_pattern = '[.+\.]?imdb.com/title/([A-Za-z]{2}[\d]{5,8})(/?.+?|$)'
+    result = re.search(matching_pattern, guid)
     if result:
         clean_guid = result.group(1)
 
     else:
-        logger.error('ERROR - Could not determine IMDb guid: {}'.format(guid))
         clean_guid = None
 
     return clean_guid
