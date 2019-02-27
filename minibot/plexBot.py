@@ -24,9 +24,6 @@ def parse_arguments():
                         required=False, action='store_true',
                         help='Run flask server listening at endpoint for new '
                              'movies to sync.')
-    parser.add_argument('-t', '--transfer', dest='transfer',
-                        required=False, action='store_true',
-                        help='Loop the file transfer queue.')
     args = parser.parse_args()
 
     return args, parser
@@ -38,13 +35,11 @@ def main():
     if args.sync_server:
         logger.info('Starting server')
         from utilities import server
-
         server.run_server(debug=args.debug)
 
     elif args.path and args.imdb_guid:
         logger.info('Sending sync request')
         from utilities import server
-
         server.post_new_movie_to_syncer(
                 imdb_guid=args.imdb_guid, path=args.path)
 
@@ -52,12 +47,6 @@ def main():
         logger.info('Sending new movie notification')
         from utilities import plexutils
         plexutils.send_new_movie_slack_notification(args)
-
-    elif args.transfer:
-        logger.info('Starting queue...')
-        from utilities import db_utils, filesyncer
-
-        filesyncer.transfer_queue_loop(db_utils.FileTransferDB())
 
     else:
         parser.print_help()
