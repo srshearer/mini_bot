@@ -323,7 +323,7 @@ class TransferQueue(utils.StoppableThread):
                     self._worker()
 
         except KeyboardInterrupt:
-            logger.info('Exiting queue: KeyboardInterrupt')
+            logger.debug('Exiting queue: KeyboardInterrupt')
             pass
 
         except Exception as e:
@@ -333,7 +333,7 @@ class TransferQueue(utils.StoppableThread):
 
         finally:
             self._cleanup()
-            logger.info('Exiting queue: clean')
+            logger.debug('Exiting queue: clean')
             return
 
     def _cleanup(self):

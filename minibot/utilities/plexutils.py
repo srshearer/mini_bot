@@ -372,11 +372,15 @@ def get_clean_imdb_guid(guid):
     Returns:
         - str(IMDb guid)
     """
-    matching_pattern = '[.+\.]?imdb.com/title/([A-Za-z]{2}[\d]{5,8})(/?.+?|$)'
-    result = re.search(matching_pattern, guid)
+    url_pattern = '[.+\.]?imdb.com/title/([A-Za-z]{2}[\d]{5,8})(/?.+?|$)'
+    plex_pattern = '.+://([A-Za-z]{2}[\d]{5,8})\?.+'
+
+    result = re.search(url_pattern, guid)
+    if not result:
+        result = re.search(plex_pattern, guid)
+
     if result:
         clean_guid = result.group(1)
-
     else:
         clean_guid = None
 
