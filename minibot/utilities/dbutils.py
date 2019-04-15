@@ -111,16 +111,3 @@ class FileTransferDB(object):
             cur = con.cursor()
             cur.execute("DELETE FROM {} WHERE guid=?".format(
                 self.table_name), (guid,))
-
-    @staticmethod
-    def row_to_dict(row):
-        row_id, guid, remote_path, queued, complete = row
-        item_dict = {
-            'id': row_id,
-            'guid': guid,
-            'remote_path': remote_path,
-            'queued': queued,
-            'complete': complete
-        }
-
-        return item_dict

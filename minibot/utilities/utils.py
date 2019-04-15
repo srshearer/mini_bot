@@ -7,6 +7,18 @@ import functools
 import threading
 
 
+class PlexBotError(Exception):
+    """
+    Base exception for all errors raised by the PlexBot library
+    """
+
+    def __init__(self, msg=None):
+        if msg is None:
+            # default error message
+            msg = "An error occurred in the PlexBot library"
+        super(PlexBotError, self).__init__(msg)
+
+
 class Logger(object):
     def __init__(self, file_path=None, stdout=False):
         self._file_path = self._create_log_file(file_path=file_path)

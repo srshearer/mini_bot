@@ -385,3 +385,40 @@ def get_clean_imdb_guid(guid):
         clean_guid = None
 
     return clean_guid
+
+
+def get_file_path_from_string(in_string):
+    try:
+        s = str(in_string).strip()
+        clean_path = '/' + '/'.join(s.split('/')[1:])
+    except Exception as e:
+        print(e)
+        clean_path = None
+
+    return clean_path
+
+
+def get_title_year_from_path(movie_path):
+    """Example string:
+        IN: /mnt/movies/D/Defending Your Life (1991).mp4
+        OUT: title:'Defending Your Life' 	year:'1991'
+    """
+    movie_path = str(movie_path.strip())
+    m = movie_path.split('/')[-1]
+    title = None
+    year = None
+
+    pattern = '([\w|\ |-]+)\((\d{4})\).+'
+
+    try:
+        result = re.search(pattern, m)
+
+        if result:
+            title, year = result.groups()
+            title = title.strip()
+            year = year.strip()
+
+    except ValueError as e:
+        print(e)
+
+    return title, year

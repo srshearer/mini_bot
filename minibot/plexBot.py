@@ -41,7 +41,12 @@ def main():
         logger.info('Sending sync request')
         from utilities import server
         server.post_new_movie_to_syncer(
-                imdb_guid=args.imdb_guid, path=args.path)
+                path=args.path, imdb_guid=args.imdb_guid)
+
+    elif args.path and not args.imdb_guid:
+        logger.info('Attempting sync request')
+        from utilities import server
+        server.post_new_movie_to_syncer(path=args.path, imdb_guid=None)
 
     elif args.imdb_guid:
         logger.info('Sending new movie notification')

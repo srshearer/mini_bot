@@ -279,10 +279,10 @@ class TransferQueue(utils.StoppableThread):
             logger.info('Queued items: {}'.format(self.queue.unfinished_tasks))
             q_guid = self.queue.get()
             logger.info('Starting download: {}'.format(q_guid))
-            queued_movie_dict = self.db.row_to_dict(self.db.select_guid(q_guid))
+            queued_movie = self.db.select_guid(q_guid)
             syncer = PlexSyncer(
                 imdb_guid=q_guid,
-                remote_path=queued_movie_dict['remote_path']
+                remote_path=queued_movie.remote_path
             )
             successful = syncer.run_sync_flow()
             if successful:
@@ -312,10 +312,8 @@ class TransferQueue(utils.StoppableThread):
         try:
             while not self.stopped():
                 unqueued = self.db.select_all_unqueued_movies()
-                for unqueued_row in unqueued:
-                    unqueued_dict = self.db.row_to_dict(unqueued_row)
-                    guid = unqueued_dict['guid']
-                    self.add_item(guid)
+                for unqueued_item in unqueued:
+                    self.add_item(unqueued_item.guid)
 
                 if self.queue.empty():
                     time.sleep(update_frequency)
@@ -339,8 +337,7 @@ class TransferQueue(utils.StoppableThread):
     def _cleanup(self):
         logger.debug('Cleaning up')
         incomplete_rows = self.db.select_all_queued_incomplete()
-        for i in incomplete_rows:
-            guid = self.db.row_to_dict(i)['guid']
-            logger.debug(
-                'Setting incomplete: guid: {}: row: {}'.format(guid, i))
-            self.db.mark_unqueued_incomplete(guid)
+        for incomplete_item in incomplete_rows:
+            logger.debug('Setting incomplete: guid: {}: row: {}'.format(
+                incomplete_item.guid, incomplete_item))
+            self.db.mark_unqueued_incomplete(incomplete_item.guid)
