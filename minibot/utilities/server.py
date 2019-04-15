@@ -72,10 +72,10 @@ def handle_movie_sync_request(raw_request, debug=False):
 
 
 def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
-    movie_info_dict = dict
-    movie_info_dict['path'] = path
-    if imdb_guid:
-        movie_info_dict['guid'] = imdb_guid
+    movie_info_dict = {
+        'path': path,
+        'guid': imdb_guid,
+    }
 
     movie_data = json.dumps(movie_info_dict)
 
