@@ -3,6 +3,7 @@
 from __future__ import print_function, unicode_literals, absolute_import
 import json
 import requests
+import sqlite3
 from flask import Flask, request
 from utilities import config
 from utilities import logger
@@ -28,17 +29,23 @@ def handle_movie_sync_request(raw_request, debug=False):
             raw_request)
         return 400, request_data
     else:
-        remote_path = raw_request['path']
+        request_data['path'] = raw_request['path']
 
     if raw_request['guid']:
         imdb_guid = raw_request['guid']
-        _, result = plexutils.omdb_guid_search(imdb_guid=imdb_guid, debug=debug)
+        omdb_status, result = plexutils.omdb_guid_search(
+            imdb_guid=imdb_guid, debug=debug)
     else:
-        clean_path = plexutils.get_file_path_from_string(remote_path)
+        clean_path = plexutils.get_file_path_from_string(request_data['path'])
         request_data['title'], request_data['year'] = plexutils.get_title_year_from_path(
             clean_path)
-        status, result = plexutils.omdb_title_search(
+        omdb_status, result = plexutils.omdb_title_search(
             request_data['title'], request_data['year'])
+
+    if not omdb_status == 200:
+        request_data['status'] = 'Error locating movie in OMDB: {}'.format(
+            raw_request)
+        return omdb_status, request_data
 
     try:
         request_data['guid'] = result['imdbID']
@@ -86,7 +93,8 @@ def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
         r = requests.post(
             url, movie_data,
             headers={'Content-Type': 'application/json'},
-            timeout=timeout)
+            timeout=timeout
+        )
         logger.info('Response: [{}] {}'.format(r.status_code, r.text))
 
     except requests.exceptions.ConnectionError:
@@ -112,15 +120,23 @@ def run_server(debug=False):
         logger.debug('Result: {} - {}'.format(r_code, r))
 
         if r_code == 200:
-            msg = '[{}] {} ({}) - path: {}'.format(
-                r['guid'], r['title'], r['year'], r['path'])
-            _db.insert(guid=r['guid'], remote_path=r['path'])
+            try:
+                _db.insert(guid=r['guid'], remote_path=r['path'])
+            except sqlite3.IntegrityError as e:
+                if 'UNIQUE constraint failed' in e.message:
+                    logger.info('Skipping request. Already in '
+                                'database: {}'.format(r['guid']))
+                    r_code = 208
+                    r['status'] = 'Item already requested'
+            finally:
+                text = '{} - [{}] {} ({}) - path: {}'.format(
+                    r['status'], r['guid'], r['title'], r['year'], r['path'])
 
         else:
-            msg = 'Unable to locate in OMDb: {}'.format(r['guid'])
-            logger.error('{} - {}'.format(r_code, msg))
+            text = '{}: {}'.format(r['status'], r)
+            logger.error('{} - {}'.format(r_code, r['status']))
 
-        return msg, r_code
+        return text, r_code
 
     try:
         q.start()

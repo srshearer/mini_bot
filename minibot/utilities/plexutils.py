@@ -389,7 +389,7 @@ def get_clean_imdb_guid(guid):
 
 def get_file_path_from_string(in_string):
     try:
-        s = str(in_string).strip()
+        s = (u'{}'.format(in_string)).strip()
         clean_path = '/' + '/'.join(s.split('/')[1:])
     except Exception as e:
         print(e)

@@ -279,10 +279,10 @@ class TransferQueue(utils.StoppableThread):
             logger.info('Queued items: {}'.format(self.queue.unfinished_tasks))
             q_guid = self.queue.get()
             logger.info('Starting download: {}'.format(q_guid))
-            queued_movie = self.db.select_guid(q_guid)
+            queued_movie = self.db.row_to_dict(self.db.select_guid(q_guid))
             syncer = PlexSyncer(
                 imdb_guid=q_guid,
-                remote_path=queued_movie.remote_path
+                remote_path=queued_movie['remote_path']
             )
             successful = syncer.run_sync_flow()
             if successful:
@@ -313,7 +313,9 @@ class TransferQueue(utils.StoppableThread):
             while not self.stopped():
                 unqueued = self.db.select_all_unqueued_movies()
                 for unqueued_item in unqueued:
-                    self.add_item(unqueued_item.guid)
+                    u = self.db.row_to_dict(unqueued_item)
+                    self.add_item(u['guid'])
+                    self.stop()
 
                 if self.queue.empty():
                     time.sleep(update_frequency)
@@ -326,8 +328,10 @@ class TransferQueue(utils.StoppableThread):
 
         except Exception as e:
             logger.error(e)
-            logger.warning('Exiting queue: Exception!')
-            pass
+            logger.warning(
+                'Exiting queue: Exception!: {}'.format(unqueued_item))
+            self.stop()
+            raise
 
         finally:
             self._cleanup()
@@ -338,6 +342,7 @@ class TransferQueue(utils.StoppableThread):
         logger.debug('Cleaning up')
         incomplete_rows = self.db.select_all_queued_incomplete()
         for incomplete_item in incomplete_rows:
+            i = self.db.row_to_dict(incomplete_item)
             logger.debug('Setting incomplete: guid: {}: row: {}'.format(
-                incomplete_item.guid, incomplete_item))
-            self.db.mark_unqueued_incomplete(incomplete_item.guid)
+                i['guid'], i))
+            self.db.mark_unqueued_incomplete(i['guid'])
