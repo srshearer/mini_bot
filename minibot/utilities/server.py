@@ -9,6 +9,7 @@ from utilities import config
 from utilities import logger
 from utilities import dbutils
 from utilities import plexutils
+from utilities.utils import retry
 from utilities.filesyncer import TransferQueue
 
 
@@ -106,6 +107,7 @@ def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
                 timeout))
 
 
+@retry(delay=3, logger=logger)
 def run_server(debug=False):
     app = Flask(__name__)
     _db = dbutils.FileTransferDB()

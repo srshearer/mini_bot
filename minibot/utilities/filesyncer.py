@@ -9,6 +9,8 @@ from utilities import utils
 from utilities import config
 from utilities import logger
 from utilities import plexutils
+from utilities.utils import retry
+from utilities.utils import PlexBotError
 from slackannounce.utils import SlackSender
 
 
@@ -301,6 +303,8 @@ class TransferQueue(utils.StoppableThread):
         self.queue.put(guid, **kwargs)
         self.db.mark_queued(guid)
 
+    @retry(exception_to_check=PlexBotError,
+           delay=30, logger=logger)
     def run(self, update_frequency=5):
         """ Instantiate the TransferQueue using the supplied database, then
         continuously check for unqueued items in the database, add them to the
@@ -309,6 +313,7 @@ class TransferQueue(utils.StoppableThread):
             for items. (defaults to 5 seconds)
         :return:
         """
+        unqueued_item = None
         try:
             while not self.stopped():
                 unqueued = self.db.select_all_unqueued_movies()
@@ -331,7 +336,7 @@ class TransferQueue(utils.StoppableThread):
             logger.warning(
                 'Exiting queue: Exception!: {}'.format(unqueued_item))
             self.stop()
-            raise
+            raise utils.PlexBotError(e)
 
         finally:
             self._cleanup()
