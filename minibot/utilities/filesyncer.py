@@ -5,12 +5,12 @@ import os
 import time
 import pysftp
 from Queue import Queue
-from utilities import utils
-from utilities import config
-from utilities import logger
-from utilities import plexutils
-from utilities.utils import retry
-from utilities.utils import PlexBotError
+from minibot.utilities import utils
+from minibot.utilities import config
+from minibot.utilities import logger
+from minibot.utilities import plexutils
+from minibot.utilities.utils import retry
+from minibot.utilities.utils import PlexBotError
 from slackannounce.utils import SlackSender
 
 

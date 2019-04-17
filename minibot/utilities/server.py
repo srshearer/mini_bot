@@ -5,12 +5,12 @@ import json
 import requests
 import sqlite3
 from flask import Flask, request
-from utilities import config
-from utilities import logger
-from utilities import dbutils
-from utilities import plexutils
-from utilities.utils import retry
-from utilities.filesyncer import TransferQueue
+from minibot.utilities import config
+from minibot.utilities import logger
+from minibot.utilities import dbutils
+from minibot.utilities import plexutils
+from minibot.utilities.utils import retry
+from minibot.utilities.filesyncer import TransferQueue
 
 
 _NEW_MOVIE_ENDPOINT = '/new_movie/'

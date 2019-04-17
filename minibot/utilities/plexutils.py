@@ -4,9 +4,9 @@ from __future__ import print_function, unicode_literals, absolute_import
 import re
 import json
 import requests
-from utilities import logger
-from utilities import config
-from utilities import utils
+from minibot.utilities import logger
+from minibot.utilities import config
+from minibot.utilities import utils
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 from slackannounce.utils import SlackSender, text_color

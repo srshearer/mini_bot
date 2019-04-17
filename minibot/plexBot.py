@@ -2,7 +2,7 @@
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
 import argparse
-from utilities import logger
+from minibot.utilities import logger
 
 
 def parse_arguments():
@@ -34,18 +34,18 @@ def main():
 
     if args.sync_server:
         logger.info('Starting server')
-        from utilities import server
+        from minibot.utilities import server
         server.run_server(debug=args.debug)
 
     elif args.path:
         logger.info('Sending sync request')
-        from utilities import server
+        from minibot.utilities import server
         server.post_new_movie_to_syncer(
                 path=args.path, imdb_guid=args.imdb_guid)
 
     elif args.imdb_guid:
         logger.info('Sending new movie notification')
-        from utilities import plexutils
+        from minibot.utilities import plexutils
         plexutils.send_new_movie_slack_notification(args)
 
     else:
