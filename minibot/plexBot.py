@@ -2,7 +2,7 @@
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
 import argparse
-#from utilities import logger
+from utilities import logger
 
 
 def parse_arguments():
