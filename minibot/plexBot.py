@@ -2,7 +2,7 @@
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
 import argparse
-from utilities import logger
+#from utilities import logger
 
 
 def parse_arguments():
@@ -16,7 +16,7 @@ def parse_arguments():
                         required=False, action='store_true',
                         help='Enable dryrun mode. Message will not be sent.')
     parser.add_argument('-i', '--guid', dest='imdb_guid', metavar='<IMDb guid>',
-                        required=False, action='store',
+                        required=False, action='store', default=None,
                         help='Find movie by IMDb guid.')
     parser.add_argument('-p', '--path', dest='path', metavar='<file path>',
                         required=False, action='store', help='Path to file.')
@@ -37,16 +37,11 @@ def main():
         from utilities import server
         server.run_server(debug=args.debug)
 
-    elif args.path and args.imdb_guid:
+    elif args.path:
         logger.info('Sending sync request')
         from utilities import server
         server.post_new_movie_to_syncer(
                 path=args.path, imdb_guid=args.imdb_guid)
-
-    elif args.path and not args.imdb_guid:
-        logger.info('Attempting sync request')
-        from utilities import server
-        server.post_new_movie_to_syncer(path=args.path, imdb_guid=None)
 
     elif args.imdb_guid:
         logger.info('Sending new movie notification')
