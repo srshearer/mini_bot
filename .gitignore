@@ -7,3 +7,5 @@ secrets.py
 /dist/
 /*.egg-info
 build
+*.log
+*.db
