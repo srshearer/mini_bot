@@ -9,6 +9,8 @@ from utilities import utils
 from utilities import config
 from utilities import logger
 from utilities import plexutils
+from utilities.utils import retry
+from utilities.utils import PlexBotError
 from slackannounce.utils import SlackSender
 
 
@@ -279,10 +281,10 @@ class TransferQueue(utils.StoppableThread):
             logger.info('Queued items: {}'.format(self.queue.unfinished_tasks))
             q_guid = self.queue.get()
             logger.info('Starting download: {}'.format(q_guid))
-            queued_movie_dict = self.db.row_to_dict(self.db.select_guid(q_guid))
+            queued_movie = self.db.row_to_dict(self.db.select_guid(q_guid))
             syncer = PlexSyncer(
                 imdb_guid=q_guid,
-                remote_path=queued_movie_dict['remote_path']
+                remote_path=queued_movie['remote_path']
             )
             successful = syncer.run_sync_flow()
             if successful:
@@ -301,6 +303,8 @@ class TransferQueue(utils.StoppableThread):
         self.queue.put(guid, **kwargs)
         self.db.mark_queued(guid)
 
+    @retry(exception_to_check=PlexBotError,
+           delay=30, logger=logger)
     def run(self, update_frequency=5):
         """ Instantiate the TransferQueue using the supplied database, then
         continuously check for unqueued items in the database, add them to the
@@ -309,13 +313,14 @@ class TransferQueue(utils.StoppableThread):
             for items. (defaults to 5 seconds)
         :return:
         """
+        unqueued_item = None
         try:
             while not self.stopped():
                 unqueued = self.db.select_all_unqueued_movies()
-                for unqueued_row in unqueued:
-                    unqueued_dict = self.db.row_to_dict(unqueued_row)
-                    guid = unqueued_dict['guid']
-                    self.add_item(guid)
+                for unqueued_item in unqueued:
+                    u = self.db.row_to_dict(unqueued_item)
+                    self.add_item(u['guid'])
+                    self.stop()
 
                 if self.queue.empty():
                     time.sleep(update_frequency)
@@ -328,8 +333,10 @@ class TransferQueue(utils.StoppableThread):
 
         except Exception as e:
             logger.error(e)
-            logger.warning('Exiting queue: Exception!')
-            pass
+            logger.warning(
+                'Exiting queue: Exception!: {}'.format(unqueued_item))
+            self.stop()
+            raise utils.PlexBotError(e)
 
         finally:
             self._cleanup()
@@ -339,8 +346,8 @@ class TransferQueue(utils.StoppableThread):
     def _cleanup(self):
         logger.debug('Cleaning up')
         incomplete_rows = self.db.select_all_queued_incomplete()
-        for i in incomplete_rows:
-            guid = self.db.row_to_dict(i)['guid']
-            logger.debug(
-                'Setting incomplete: guid: {}: row: {}'.format(guid, i))
-            self.db.mark_unqueued_incomplete(guid)
+        for incomplete_item in incomplete_rows:
+            i = self.db.row_to_dict(incomplete_item)
+            logger.debug('Setting incomplete: guid: {}: row: {}'.format(
+                i['guid'], i))
+            self.db.mark_unqueued_incomplete(i['guid'])

@@ -33,6 +33,7 @@ class FileTransferDB(object):
         with sql.connect(self.db_path) as con:
             add_movie_sql = 'INSERT INTO {} (guid, remote_path) ' \
                             'VALUES (?, ?)'.format(self.table_name)
+            con.row_factory = sql.Row
             cur = con.cursor()
             cur.execute(add_movie_sql, (guid, remote_path))
             con.commit()
@@ -41,6 +42,7 @@ class FileTransferDB(object):
         query_sql = 'SELECT * FROM {} WHERE {}'.format(
             self.table_name, query)
         with sql.connect(self.db_path) as con:
+            con.row_factory = sql.Row
             cur = con.cursor()
             cur.execute(query_sql)
 
@@ -50,6 +52,7 @@ class FileTransferDB(object):
         guid_query = 'SELECT * FROM {} WHERE guid=?'.format(
             self.table_name)
         with sql.connect(self.db_path) as con:
+            con.row_factory = sql.Row
             cur = con.cursor()
             cur.execute(guid_query, (guid,))
             result = cur.fetchone()
@@ -59,6 +62,7 @@ class FileTransferDB(object):
     def select_all_movies(self):
         query_sql = 'SELECT * FROM {}'.format(self.table_name)
         with sql.connect(self.db_path) as con:
+            con.row_factory = sql.Row
             cur = con.cursor()
             cur.execute(query_sql)
             rows = cur.fetchall()
@@ -114,13 +118,4 @@ class FileTransferDB(object):
 
     @staticmethod
     def row_to_dict(row):
-        row_id, guid, remote_path, queued, complete = row
-        item_dict = {
-            'id': row_id,
-            'guid': guid,
-            'remote_path': remote_path,
-            'queued': queued,
-            'complete': complete
-        }
-
-        return item_dict
+        return dict(zip(row.keys(), row))
