@@ -27,14 +27,16 @@ This is the primary script to interact with the collection of utility functions.
 
 
 ### Slack Notifier 
-*Description:*
+
+###### *Description:*
 
 Takes a valid IMDb movie ID _(e.g. tt0168122)_ as an argument to search for that movie in your Plex library. Information about the movie is gathered from the Plex library via PlexAPI and OMDb which is assembled into a json attatchment. This json attachment is used to send a new movie notification to Slack via slackAnnounce.py.
 
 
 ### Plex Syncer: Client & Server
 
-*Description:*
+###### *Description:*
+
 Runs a flask server which listens for at an endpoint for an imdb guid and a file path. When the endpoint receives a POST with this information, the file will be transferred from the remote machine to the local server if it is not already in a local Plex library. 
 
 
@@ -50,6 +52,6 @@ Before this will work, you will need to do the following…
 4. Verify that _.gitignore_ lists _*config.py_ as an ignored file and that plex_config.py will not be pushed to git. This should already be set up properly for you.
 5. Install PlexAPI in order to interact with your Plex server. _(https://pypi.python.org/pypi/PlexAPI)_
 
-*Recommended*
+###### *Recommended*
 - I would recommend that you install and use Tautulli on your Plex Server. This will not only give you a great web interface and statistics for your server and content, but will also allow you to monitor your server for new content and launch plexBot.py. Alternatively, you could use Tautulli to entirely circumvent the need of this script and just send Slack notifications via their built-in tools.
 - Token based Plex authentication is set up by default but can be changed in plex_config.py. User based authentication is much slower than token based auth. 
