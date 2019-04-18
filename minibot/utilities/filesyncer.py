@@ -320,7 +320,6 @@ class TransferQueue(utils.StoppableThread):
                 for unqueued_item in unqueued:
                     u = self.db.row_to_dict(unqueued_item)
                     self.add_item(u['guid'])
-                    self.stop()
 
                 if self.queue.empty():
                     time.sleep(update_frequency)
