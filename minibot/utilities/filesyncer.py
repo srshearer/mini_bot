@@ -224,10 +224,10 @@ class PlexSyncer(object):
 
     def notify_slack(self, message, title=None, room='me'):
         if not title:
-            t = 'Plex Syncer Notification'
-        logger.info('{} | {}'.format(t, message))
+            title = 'Plex Syncer Notification'
+        logger.info('{} | {}'.format(title, message))
         notification = SlackSender(room=room, debug=self.debug)
-        notification.set_simple_message(message=message, title=t)
+        notification.set_simple_message(message=message, title=title)
         notification.send()
 
     def get_title_year(self, imdb_guid=None):
