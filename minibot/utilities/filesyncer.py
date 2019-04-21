@@ -222,11 +222,12 @@ class PlexSyncer(object):
 
         return
 
-    def notify_slack(self, message, room='me'):
-        logger.info(message)
+    def notify_slack(self, message, title=None, room='me'):
+        if not title:
+            t = 'Plex Syncer Notification'
+        logger.info('{} | {}'.format(t, message))
         notification = SlackSender(room=room, debug=self.debug)
-        notification.set_simple_message(
-            message=message, title='Plex Syncer Notification')
+        notification.set_simple_message(message=message, title=t)
         notification.send()
 
     def get_title_year(self, imdb_guid=None):
@@ -234,11 +235,18 @@ class PlexSyncer(object):
             imdb_guid = self.imdb_guid
         status, result = plexutils.omdb_guid_search(
             imdb_guid=imdb_guid)
+
+        logger.debug('Response from OMDb: [{}] {}'.format(status, result))
+        if not status == 200:
+            # logger.error( # ToDo: remove debug line and only log if not 200
+            #     'Non-200 response from OMDb: [{}] {}'.format(status, result))
+            return None
+
         try:
             title_year = '{} ({})'.format(result["Title"], result["Year"])
         except Exception as e:
-            logger.warning('Failed to determine title and year: {}'.format(e))
-            title_year = None
+            logger.error('Failed to determine title and year: {}'.format(e))
+            return None
 
         return title_year
 
@@ -248,7 +256,8 @@ class PlexSyncer(object):
         if not self.plex_local.in_plex_library(guid=self.imdb_guid):
             message = 'Movie not in library: [{}] {} - {}'.format(
                 self.imdb_guid, self.title_year, self.remote_path)
-            self.notify_slack(message)
+            t = 'New transfer: {}'.format(self.title_year)
+            self.notify_slack(message, title=t)
 
             syncer = FileSyncer(
                 remote_file=self.remote_path,
@@ -256,12 +265,14 @@ class PlexSyncer(object):
             success, file_path = syncer.get_remote_file()
 
             if not file_path or not success:
-                message = 'Transfer failed: {}'.format(message)
+                t = 'Transfer failed: {}'.format(self.title_year)
+                message = 'Transfer failed: {}'.format(self.title_year)
                 logger.error(message)
             else:
+                t = 'Download complete: {}'.format(self.title_year)
                 message = 'Download complete: {} - {}'.format(
                     self.title_year, file_path)
-            self.notify_slack(message)
+            self.notify_slack(message, title=t)
         else:
             success = True
             logger.info('Movie already in library: [{}] {}\n{}'.format(
@@ -333,7 +344,7 @@ class TransferQueue(utils.StoppableThread):
         except Exception as e:
             logger.error(e)
             logger.warning(
-                'Exiting queue: Exception!: {}'.format(unqueued_item))
+                'Exiting queue: Exception!: {}'.format(tuple(unqueued_item)))
             self.stop()
             raise utils.PlexBotError(e)
 

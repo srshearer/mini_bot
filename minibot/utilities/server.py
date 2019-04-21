@@ -48,6 +48,11 @@ def handle_movie_sync_request(raw_request, debug=False):
             raw_request)
         return omdb_status, request_data
 
+    if not result['Type'] == 'movie':
+        request_data['status'] = 'Content type is not movie: {} | {}'.format(
+            result['Type'], raw_request)
+        return 400, request_data
+
     try:
         request_data['guid'] = result['imdbID']
         request_data['title'] = result['Title']
@@ -88,7 +93,7 @@ def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
     movie_data = json.dumps(movie_info_dict)
 
     url = config.REMOTE_LISTENER + _NEW_MOVIE_ENDPOINT
-    logger.debug('Posting request to: {}'.format(url))
+    logger.debug('Posting request to: {} - {}'.format(url, movie_data))
 
     try:
         r = requests.post(
@@ -148,7 +153,7 @@ def run_server(debug=False):
             app.run(host='0.0.0.0', port=5000)
 
     except KeyboardInterrupt:
-        logger.info('Stopping server and transfer queue.')
+        logger.info('Exiting...')
 
     except Exception as e:
         logger.error('Unknown exception: \n{}'.format(e))
