@@ -8,10 +8,11 @@ from Queue import Queue
 from utilities import utils
 from utilities import config
 from utilities import logger
+from utilities import omdb
 from utilities import plexutils
 from utilities.utils import retry
-from utilities.utils import PlexBotError
-from slackannounce.utils import SlackSender
+from utilities.plexutils import PlexException
+from utilities.slackutils import SlackSender
 
 
 class FileSyncer(object):
@@ -210,6 +211,7 @@ class PlexSyncer(object):
         self.title_year = None
         self.movie_dir = os.path.expanduser(config.FILE_TRANSFER_COMPLETE_DIR)
         self.plex_local = None
+        self._omdb = omdb.OMDb(api_key=config.OMDB_API_KEY, debug=debug)
 
     def connect_plex(self):
         logger.info('Connecting to Plex')
@@ -222,19 +224,31 @@ class PlexSyncer(object):
 
         return
 
-    def notify_slack(self, message, title=None, room='me'):
+    def notify_slack(self, message, title=None, channel='me'):
         if not title:
             title = 'Plex Syncer Notification'
-        logger.info('{} | {}'.format(title, message))
-        notification = SlackSender(room=room, debug=self.debug)
+
+        if channel == 'me':
+            webhook_url = config.SLACK_WEBHOOK_URL_ME
+        else:
+            webhook_url = config.SLACK_WEBHOOK_URL
+
+        logger.info('Sending Slack notification: {} | {}'.format(
+            title, message))
+
+        notification = SlackSender(
+            webhook_url=webhook_url,
+            user=config.DEFAULT_SLACK_USER,
+            channel=channel,
+            debug=self.debug
+            )
         notification.set_simple_message(message=message, title=title)
         notification.send()
 
     def get_title_year(self, imdb_guid=None):
         if not imdb_guid:
             imdb_guid = self.imdb_guid
-        status, result = plexutils.omdb_guid_search(
-            imdb_guid=imdb_guid)
+        status, result = self._omdb.guid_search(imdb_guid=imdb_guid)
 
         logger.debug('Response from OMDb: [{}] {}'.format(status, result))
         if not status == 200:
@@ -314,7 +328,7 @@ class TransferQueue(utils.StoppableThread):
         self.queue.put(guid, **kwargs)
         self.db.mark_queued(guid)
 
-    @retry(exception_to_check=PlexBotError,
+    @retry(exception_to_check=PlexException,
            delay=30, logger=logger)
     def run(self, update_frequency=5):
         """ Instantiate the TransferQueue using the supplied database, then
@@ -346,7 +360,7 @@ class TransferQueue(utils.StoppableThread):
             logger.warning(
                 'Exiting queue: Exception!: {}'.format(tuple(unqueued_item)))
             self.stop()
-            raise utils.PlexBotError(e)
+            raise utils.PlexException(e)
 
         finally:
             self._cleanup()

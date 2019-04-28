@@ -2,23 +2,17 @@
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
 import re
-import json
-import requests
 from utilities import logger
 from utilities import config
+from utilities import omdb
 from utilities import utils
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
-from slackannounce.utils import SlackSender, text_color
+from utilities.slackutils import SlackSender, text_color
 
 
 class PlexException(Exception):
     """Custom exception for Plex related failures."""
-    pass
-
-
-class OMDbException(Exception):
-    """Custom exception for OMDb related failures."""
     pass
 
 
@@ -162,6 +156,7 @@ class MovieNotification(object):
         self._plex_helper = PlexSearch(**kwargs)
         self._plex_result = None
         self._omdb_result = None
+        self._omdb = omdb.OMDb(api_key=config.OMDB_API_KEY, debug=debug)
 
     def search(self, imdb_guid):
         """Searches Plex via PlexAPI and OMDb for a movie using an IMDb guid.
@@ -172,7 +167,7 @@ class MovieNotification(object):
         """
         self.imdb_guid = imdb_guid
 
-        _, self._omdb_result = omdb_guid_search(imdb_guid, debug=self.debug)
+        _, self._omdb_result = self._omdb.guid_search(imdb_guid)
 
         plex_results = self._plex_helper.movie_search(imdb_guid)
         if plex_results:
@@ -220,67 +215,6 @@ class MovieNotification(object):
     def _format_footer(plot, director, rating, filesize):
         return '{} \n\nDirected by: {} \nRated [{}]\nSize: {}\nPoster: '.format(
             plot, director, rating, filesize)
-
-
-def omdb_guid_search(imdb_guid, debug=False):
-    """Querie OMDb.org for movie information using a provided IMDb guid and
-    return the response.
-    Requires: imdb_guid(str)
-    Returns url(str)
-    """
-
-    query = '?i={}&plot=short'.format(imdb_guid)
-
-    if debug:
-        logger.debug('Searching OMDb: {}'.format(imdb_guid))
-
-    status, response_json = _query_omdb(query)
-
-    return status, response_json
-
-
-def omdb_title_search(title, year=None, debug=False):
-    """Queries OMDb.org for movie information using a title and
-    optionally, a year.
-    Requires: title(str) - movie title
-              year(str)  - year movie was made (optional)
-    Returns url(str)
-    """
-    query = '?t={}'.format(title)
-    if year:
-        query = query + '&y={}'.format(year)
-    query = query + '&plot=short'
-
-    if debug:
-        logger.debug('Searching OMDb: {} {}'.format(title, year))
-
-    status, response_json = _query_omdb(query)
-
-    return status, response_json
-
-
-def _query_omdb(query, debug=False):
-    omdb_query_url = 'http://www.omdbapi.com/{}&apikey={}'.format(
-        query, config.OMDB_API_KEY)
-
-    if debug:
-        logger.debug('Query url: {}'.format(omdb_query_url))
-
-    response = requests.get(
-        omdb_query_url,
-        headers={'Content-Type': 'application/json'}
-    )
-
-    if response.status_code != 200:
-        logger.error('OMDb responded with an error')
-        logger.debug('Response: [{}] - {}'.format(
-            response.status_code, response.text))
-
-    elif debug:
-        logger.debug('Response: [{}] - {}'.format(
-            response.status_code, response.text))
-
-    return response.status_code, json.loads(response.text)
 
 
 def get_new_movie_json(imdb_guid, **kwargs):

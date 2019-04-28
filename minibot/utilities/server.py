@@ -8,6 +8,7 @@ from flask import Flask, request
 from utilities import config
 from utilities import logger
 from utilities import dbutils
+from utilities import omdb
 from utilities import plexutils
 from utilities.utils import retry
 from utilities.filesyncer import TransferQueue
@@ -32,15 +33,16 @@ def handle_movie_sync_request(raw_request, debug=False):
     else:
         request_data['path'] = raw_request['path']
 
+    _omdb = omdb.OMDb(api_key=config.OMDB_API_KEY, debug=debug)
+
     if raw_request['guid']:
         imdb_guid = raw_request['guid']
-        omdb_status, result = plexutils.omdb_guid_search(
-            imdb_guid=imdb_guid, debug=debug)
+        omdb_status, result = _omdb.guid_search(imdb_guid=imdb_guid)
     else:
         clean_path = plexutils.get_file_path_from_string(request_data['path'])
         request_data['title'], request_data['year'] = plexutils.get_title_year_from_path(
             clean_path)
-        omdb_status, result = plexutils.omdb_title_search(
+        omdb_status, result = _omdb.title_search(
             request_data['title'], request_data['year'])
 
     if not omdb_status == 200:
