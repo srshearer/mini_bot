@@ -38,22 +38,21 @@ Runs a flask server which listens for at an endpoint for an imdb guid and a file
 # Setup
 
 Before this will work, you will need to do the following…
-1. Get [slackAnnounce](https://github.com/srshearer/slack-announce) up and running
-2. Rename _plex_config_example.py_ –> _plex_config.py_
-3. Add the following information to _plex_config.py_
+1. Rename _config_example.py_ –> _config.py_
+2. Add the following information to _config.py_
     - Your Plex server name, username and password _(If you wish to use user auth)_
     - Your Plex token, server URL and port _(If you wish to use token auth)_
+    - Your Slack webhook url, channel, bot username _(If you wish to use token auth)_
     - Your [OMDb api key](http://www.omdbapi.com/apikey.aspx)
-4. Verify that _.gitignore_ lists _*config.py_ as an ignored file and that plex_config.py will not be pushed to git _(This should already be set up properly for you)_  
-5. Install [PlexAPI](https://pypi.python.org/pypi/PlexAPI) in order to interact with your Plex server  
+3. Verify that _.gitignore_ lists _*config.py_ as an ignored file and that config.py will not be pushed to git _(This should already be set up properly for you)_  
+4. Install [PlexAPI](https://pypi.python.org/pypi/PlexAPI) in order to interact with your Plex server  
 
 ###### *Recommendations*
 - I would recommend that you install and use [Tautulli](https://tautulli.com) on your Plex Server. This will not only give you a great web interface and statistics for your server and content, but will also allow you to monitor your server for new content and launch plexBot.py. Alternatively, you could use Tautulli to entirely circumvent the need of this script and just send Slack notifications via their built-in tools.
-- Token based Plex authentication is set up by default but can be changed in plex_config.py. User based authentication is much slower than token based auth. 
+- Token based Plex authentication is set up by default but can be changed in config.py. User based authentication is much slower than token based auth. 
 
 ###### *Links*
 + Plex: https://www.plex.tv
 + PlexAPI: https://pypi.python.org/pypi/PlexAPI
 + OMDb API: http://www.omdbapi.com/apikey.aspx
-+ slackAnnounce: https://github.com/srshearer/slack-announce
 + Tautulli: https://tautulli.com

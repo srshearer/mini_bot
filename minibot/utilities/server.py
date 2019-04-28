@@ -8,6 +8,7 @@ from flask import Flask, request
 from utilities import config
 from utilities import logger
 from utilities import dbutils
+from utilities import omdb
 from utilities import plexutils
 from utilities.utils import retry
 from utilities.filesyncer import TransferQueue
@@ -32,15 +33,16 @@ def handle_movie_sync_request(raw_request, debug=False):
     else:
         request_data['path'] = raw_request['path']
 
+    _omdb = omdb.OMDb(api_key=config.OMDB_API_KEY, debug=debug)
+
     if raw_request['guid']:
         imdb_guid = raw_request['guid']
-        omdb_status, result = plexutils.omdb_guid_search(
-            imdb_guid=imdb_guid, debug=debug)
+        omdb_status, result = _omdb.guid_search(imdb_guid=imdb_guid)
     else:
         clean_path = plexutils.get_file_path_from_string(request_data['path'])
         request_data['title'], request_data['year'] = plexutils.get_title_year_from_path(
             clean_path)
-        omdb_status, result = plexutils.omdb_title_search(
+        omdb_status, result = _omdb.title_search(
             request_data['title'], request_data['year'])
 
     if not omdb_status == 200:
@@ -51,7 +53,7 @@ def handle_movie_sync_request(raw_request, debug=False):
     if not result['Type'] == 'movie':
         request_data['status'] = 'Content type is not movie: {} | {}'.format(
             result['Type'], raw_request)
-        return 400, request_data
+        return 415, request_data
 
     try:
         request_data['guid'] = result['imdbID']
@@ -59,12 +61,12 @@ def handle_movie_sync_request(raw_request, debug=False):
         request_data['year'] = result['Year']
 
     except KeyError as e:
-        request_data['status'] = 'Movie not found: {} \n{}'.format(
+        request_data['status'] = 'Movie not found: {} | {}'.format(
             raw_request, e)
         return 404, request_data
 
     except Exception as e:
-        request_data['status'] = 'Unknown exception: {} \n{}'.format(
+        request_data['status'] = 'Unknown exception: {} | {}'.format(
             raw_request, e)
         return 400, request_data
 
@@ -131,19 +133,15 @@ def run_server(debug=False):
                 _db.insert(guid=r['guid'], remote_path=r['path'])
             except sqlite3.IntegrityError as e:
                 if 'UNIQUE constraint failed' in e.message:
-                    logger.info('Skipping request. Already in '
+                    logger.warning('Skipping request. Already in '
                                 'database: {}'.format(r['guid']))
                     r_code = 208
                     r['status'] = 'Item already requested'
-            finally:
-                text = '{} - [{}] {} ({}) - path: {}'.format(
-                    r['status'], r['guid'], r['title'], r['year'], r['path'])
 
         else:
-            text = '{}: {}'.format(r['status'], r)
-            logger.error('{} - {}'.format(r_code, r['status']))
+            logger.warning('{} - {}'.format(r_code, r['status']))
 
-        return text, r_code
+        return r['status'], r_code
 
     try:
         q.start()
