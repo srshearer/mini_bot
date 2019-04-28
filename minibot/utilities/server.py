@@ -53,7 +53,7 @@ def handle_movie_sync_request(raw_request, debug=False):
     if not result['Type'] == 'movie':
         request_data['status'] = 'Content type is not movie: {} | {}'.format(
             result['Type'], raw_request)
-        return 400, request_data
+        return 400, request_data['status']
 
     try:
         request_data['guid'] = result['imdbID']
@@ -61,26 +61,26 @@ def handle_movie_sync_request(raw_request, debug=False):
         request_data['year'] = result['Year']
 
     except KeyError as e:
-        request_data['status'] = 'Movie not found: {} \n{}'.format(
+        request_data['status'] = 'Movie not found: {} | {}'.format(
             raw_request, e)
-        return 404, request_data
+        return 404, request_data['status']
 
     except Exception as e:
-        request_data['status'] = 'Unknown exception: {} \n{}'.format(
+        request_data['status'] = 'Unknown exception: {} | {}'.format(
             raw_request, e)
-        return 400, request_data
+        return 400, request_data['status']
 
     if not request_data['title']:
         request_data['status'] = 'Missing title: {}'.format(raw_request)
-        return 404, request_data
+        return 404, request_data['status']
 
     if not request_data['guid']:
         request_data['status'] = 'Missing guid: {}'.format(raw_request)
-        return 404, request_data
+        return 404, request_data['status']
 
     if not request_data['path']:
         request_data['status'] = 'Missing path: {}'.format(raw_request)
-        return 400, request_data
+        return 400, request_data['status']
 
     request_data['status'] = 'Success'
     return 200, request_data
