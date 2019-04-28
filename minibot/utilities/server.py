@@ -53,7 +53,7 @@ def handle_movie_sync_request(raw_request, debug=False):
     if not result['Type'] == 'movie':
         request_data['status'] = 'Content type is not movie: {} | {}'.format(
             result['Type'], raw_request)
-        return 400, request_data['status']
+        return 400, request_data
 
     try:
         request_data['guid'] = result['imdbID']
@@ -63,24 +63,24 @@ def handle_movie_sync_request(raw_request, debug=False):
     except KeyError as e:
         request_data['status'] = 'Movie not found: {} | {}'.format(
             raw_request, e)
-        return 404, request_data['status']
+        return 404, request_data
 
     except Exception as e:
         request_data['status'] = 'Unknown exception: {} | {}'.format(
             raw_request, e)
-        return 400, request_data['status']
+        return 400, request_data
 
     if not request_data['title']:
         request_data['status'] = 'Missing title: {}'.format(raw_request)
-        return 404, request_data['status']
+        return 404, request_data
 
     if not request_data['guid']:
         request_data['status'] = 'Missing guid: {}'.format(raw_request)
-        return 404, request_data['status']
+        return 404, request_data
 
     if not request_data['path']:
         request_data['status'] = 'Missing path: {}'.format(raw_request)
-        return 400, request_data['status']
+        return 400, request_data
 
     request_data['status'] = 'Success'
     return 200, request_data
@@ -137,15 +137,11 @@ def run_server(debug=False):
                                 'database: {}'.format(r['guid']))
                     r_code = 208
                     r['status'] = 'Item already requested'
-            finally:
-                text = '{} - [{}] {} ({}) - path: {}'.format(
-                    r['status'], r['guid'], r['title'], r['year'], r['path'])
 
         else:
-            text = '{}: {}'.format(r['status'], r)
             logger.error('{} - {}'.format(r_code, r['status']))
 
-        return text, r_code
+        return r['status'], r_code
 
     try:
         q.start()
