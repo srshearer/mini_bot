@@ -53,7 +53,7 @@ def handle_movie_sync_request(raw_request, debug=False):
     if not result['Type'] == 'movie':
         request_data['status'] = 'Content type is not movie: {} | {}'.format(
             result['Type'], raw_request)
-        return 400, request_data
+        return 415, request_data
 
     try:
         request_data['guid'] = result['imdbID']
@@ -133,13 +133,13 @@ def run_server(debug=False):
                 _db.insert(guid=r['guid'], remote_path=r['path'])
             except sqlite3.IntegrityError as e:
                 if 'UNIQUE constraint failed' in e.message:
-                    logger.info('Skipping request. Already in '
+                    logger.warning('Skipping request. Already in '
                                 'database: {}'.format(r['guid']))
                     r_code = 208
                     r['status'] = 'Item already requested'
 
         else:
-            logger.error('{} - {}'.format(r_code, r['status']))
+            logger.warning('{} - {}'.format(r_code, r['status']))
 
         return r['status'], r_code
 
