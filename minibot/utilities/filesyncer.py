@@ -360,7 +360,7 @@ class TransferQueue(utils.StoppableThread):
             logger.warning(
                 'Exiting queue: Exception!: {}'.format(tuple(unqueued_item)))
             self.stop()
-            raise utils.PlexException(e)
+            raise PlexException(e)
 
         finally:
             self._cleanup()

@@ -134,7 +134,7 @@ def run_server(debug=False):
             except sqlite3.IntegrityError as e:
                 if 'UNIQUE constraint failed' in e.message:
                     logger.warning('Skipping request. Already in '
-                                'database: {}'.format(r['guid']))
+                                   'database: {}'.format(r['guid']))
                     r_code = 208
                     r['status'] = 'Item already requested'
 
