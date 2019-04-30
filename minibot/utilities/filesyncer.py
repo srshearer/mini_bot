@@ -213,6 +213,7 @@ class PlexSyncer(object):
         self.plex_local = None
         self._omdb = omdb.OMDb(api_key=config.OMDB_API_KEY, debug=debug)
 
+    @utils.retry(delay=30, exception_to_check=plexutils.PlexException)
     def connect_plex(self):
         logger.info('Connecting to Plex')
         self.plex_local = plexutils.PlexSearch(
@@ -230,6 +231,7 @@ class PlexSyncer(object):
 
         if channel == 'me':
             webhook_url = config.SLACK_WEBHOOK_URL_ME
+            channel = None
         else:
             webhook_url = config.SLACK_WEBHOOK_URL
 
