@@ -237,11 +237,17 @@ def send_new_movie_slack_notification(args):
         auth_type=config.PLEX_AUTH_TYPE
     )
 
-    if args.debug:
+    channel = config.DEFAULT_SLACK_ROOM
+
+    if args.debug or args.dryrun:
         logger.debug(movie_json)
+        channel = config.DEBUG_SLACK_ROOM
 
     logger.info('Sending to slack_announce')
     slack = SlackSender(
+        webhook_url=config.SLACK_WEBHOOK_URL,
+        channel=channel,
+        user=config.DEFAULT_SLACK_USER,
         json_attachments=movie_json,
         debug=args.debug,
         dryrun=args.dryrun
