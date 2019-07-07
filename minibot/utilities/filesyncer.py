@@ -254,8 +254,8 @@ class PlexSyncer(object):
 
         logger.debug('Response from OMDb: [{}] {}'.format(status, result))
         if not status == 200:
-            # logger.error( # ToDo: remove debug line and only log if not 200
-            #     'Non-200 response from OMDb: [{}] {}'.format(status, result))
+            logger.error(
+                'Non-200 response from OMDb: [{}] {}'.format(status, result))
             return None
 
         try:
