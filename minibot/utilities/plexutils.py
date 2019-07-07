@@ -348,15 +348,24 @@ def get_title_year_from_path(movie_path):
     title = None
     year = None
 
-    pattern = '([\w|\ |-]+)\((\d{4})\).+'
+    title_year_pattern = '([\w|\ |-|\.]+)\((\d{4})\).+'
+    title_pattern_no_year = '([\w|\ |-]+)\.'
 
     try:
-        result = re.search(pattern, m)
+        result = re.search(title_year_pattern, m)
 
         if result:
             title, year = result.groups()
             title = title.strip()
             year = year.strip()
+
+        else:
+            title_result = re.search(title_pattern_no_year, m)
+            title = title_result.groups()[0]
+            title = title.strip()
+            year = None
+
+        title = title.replace('.', ' ')
 
     except ValueError as e:
         print(e)

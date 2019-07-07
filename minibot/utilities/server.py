@@ -50,9 +50,20 @@ def handle_movie_sync_request(raw_request, debug=False):
             raw_request)
         return omdb_status, request_data
 
-    if not result['Type'] == 'movie':
-        request_data['status'] = 'Content type is not movie: {} | {}'.format(
-            result['Type'], raw_request)
+    try:
+        if not result['Type']:
+            request_data['status'] = 'Unable to determine content type: ' \
+                                     '{}'.format(raw_request)
+            return 415, request_data
+
+        if not result['Type'] == 'movie':
+            request_data['status'] = 'Content type is not movie: {} | {}'.format(
+                result['Type'], raw_request)
+            return 415, request_data
+
+    except TypeError:
+        request_data['status'] = 'Unable to determine content type: {}'.format(
+            raw_request)
         return 415, request_data
 
     try:
