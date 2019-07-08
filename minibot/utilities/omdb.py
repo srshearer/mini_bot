@@ -42,3 +42,17 @@ class OMDb(object):
         )
 
         return response.status_code, json.loads(response.text)
+
+    def guid_search(self, imdb_guid=None):
+        '''OMDb.guid_search() is deprecated.
+        Please use OMDb.search() '''
+        print('WARNING: OMDb.guid_search() is deprecated! '
+              'Please use OMDb.search()')
+        return self.search(imdb_guid=imdb_guid)
+
+    def title_search(self, title=None, year=None):
+        '''OMDb.title_search() is deprecated.
+        Please use OMDb.search()'''
+        print('WARNING: OMDb.title_search() is deprecated! '
+              'Please use OMDb.search()')
+        return self.search(title=title, year=year)
