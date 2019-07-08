@@ -167,7 +167,7 @@ class MovieNotification(object):
         """
         self.imdb_guid = imdb_guid
 
-        _, self._omdb_result = self._omdb.guid_search(imdb_guid)
+        _, self._omdb_result = self._omdb.search(imdb_guid=imdb_guid)
 
         plex_results = self._plex_helper.movie_search(imdb_guid)
         if plex_results:
@@ -337,8 +337,8 @@ def get_title_year_from_path(movie_path):
     title = None
     year = None
 
-    title_year_pattern = '([\w|\ |-|\.]+)\((\d{4})\).+'
-    title_pattern_no_year = '([\w|\ |-]+)\.'
+    title_year_pattern = '([\w|\ |-|\.|-]+)\((\d{4})\).+'
+    title_pattern_no_year = '([\w|\ |-|-]+)\.'
 
     try:
         result = re.search(title_year_pattern, m)

@@ -250,7 +250,7 @@ class PlexSyncer(object):
     def get_title_year(self, imdb_guid=None):
         if not imdb_guid:
             imdb_guid = self.imdb_guid
-        status, result = self._omdb.guid_search(imdb_guid=imdb_guid)
+        status, result = self._omdb.search(imdb_guid=imdb_guid)
 
         logger.debug('Response from OMDb: [{}] {}'.format(status, result))
         if not status == 200:
