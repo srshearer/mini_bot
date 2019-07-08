@@ -38,13 +38,13 @@ def handle_movie_sync_request(raw_request, debug=False):
 
     if raw_request['guid']:
         imdb_guid = raw_request['guid']
-        omdb_status, result = _omdb.guid_search(imdb_guid=imdb_guid)
+        omdb_status, result = _omdb.search(imdb_guid=imdb_guid)
     else:
         clean_path = os.path.basename(request_data['path'])
         request_data['title'], request_data['year'] = plexutils.get_title_year_from_path(
             clean_path)
-        omdb_status, result = _omdb.title_search(
-            request_data['title'], request_data['year'])
+        omdb_status, result = _omdb.search(
+            title=request_data['title'], year=request_data['year'])
 
     if not omdb_status == 200:
         request_data['status'] = 'Error locating movie in OMDB: {}'.format(
