@@ -15,6 +15,29 @@ from utilities.plexutils import PlexException
 from utilities.slackutils import SlackSender
 
 
+def notify_slack(message, title=None, channel='me', debug=False):
+    if not title:
+        title = 'Plex Syncer Notification'
+
+    if channel == 'me':
+        webhook_url = config.SLACK_WEBHOOK_URL_ME
+        channel = None
+    else:
+        webhook_url = config.SLACK_WEBHOOK_URL
+
+    logger.info('Sending Slack notification: {} | {}'.format(
+        title, message))
+
+    notification = SlackSender(
+        webhook_url=webhook_url,
+        user=config.DEFAULT_SLACK_USER,
+        channel=channel,
+        debug=debug
+    )
+    notification.set_simple_message(message=message, title=title)
+    notification.send()
+
+
 class FileSyncer(object):
     def __init__(self, remote_file=None,
                  destination=config.FILE_TRANSFER_COMPLETE_DIR):
@@ -225,28 +248,6 @@ class PlexSyncer(object):
 
         return
 
-    def notify_slack(self, message, title=None, channel='me'):
-        if not title:
-            title = 'Plex Syncer Notification'
-
-        if channel == 'me':
-            webhook_url = config.SLACK_WEBHOOK_URL_ME
-            channel = None
-        else:
-            webhook_url = config.SLACK_WEBHOOK_URL
-
-        logger.info('Sending Slack notification: {} | {}'.format(
-            title, message))
-
-        notification = SlackSender(
-            webhook_url=webhook_url,
-            user=config.DEFAULT_SLACK_USER,
-            channel=channel,
-            debug=self.debug
-            )
-        notification.set_simple_message(message=message, title=title)
-        notification.send()
-
     def get_title_year(self, imdb_guid=None):
         if not imdb_guid:
             imdb_guid = self.imdb_guid
@@ -273,7 +274,7 @@ class PlexSyncer(object):
             message = 'Movie not in library: [{}] {} - {}'.format(
                 self.imdb_guid, self.title_year, self.remote_path)
             t = 'New transfer: {}'.format(self.title_year)
-            self.notify_slack(message, title=t)
+            notify_slack(message, title=t, debug=self.debug)
 
             syncer = FileSyncer(
                 remote_file=self.remote_path,
@@ -288,7 +289,7 @@ class PlexSyncer(object):
                 t = 'Download complete: {}'.format(self.title_year)
                 message = 'Download complete: {} - {}'.format(
                     self.title_year, file_path)
-            self.notify_slack(message, title=t)
+            notify_slack(message, title=t, debug=self.debug)
         else:
             success = True
             logger.info('Movie already in library: [{}] {}\n{}'.format(
@@ -358,9 +359,14 @@ class TransferQueue(utils.StoppableThread):
             pass
 
         except Exception as e:
+            t = 'Transfer exception: {}'.format(unqueued_item)
+            msg = 'Exiting queue: Exception! Failed item: {}'.format(
+                tuple(unqueued_item))
             logger.error(e)
-            logger.warning(
-                'Exiting queue: Exception!: {}'.format(tuple(unqueued_item)))
+            logger.warning(msg)
+            notify_slack(message=e, title=t)
+            notify_slack(message=msg, title=t)
+
             self.stop()
             raise PlexException(e)
 

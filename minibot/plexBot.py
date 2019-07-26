@@ -37,7 +37,9 @@ def main():
         from utilities import server
         server.run_server(debug=args.debug)
 
-    elif args.path:
+    elif args.path and args.imdb_guid:
+        '''Requiring imdb_guid for now until I can disambiguate movies vs 
+        other media, e.g. music, tv shows, etc...'''
         logger.info('Sending sync request')
         from utilities import server
         server.post_new_movie_to_syncer(
