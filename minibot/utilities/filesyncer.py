@@ -253,14 +253,14 @@ class PlexSyncer(object):
             imdb_guid = self.imdb_guid
         status, result = self._omdb.search(imdb_guid=imdb_guid)
 
-        logger.debug('Response from OMDb: [{}] {}'.format(status, result))
+        logger.debug(u'Response from OMDb: [{}] {}'.format(status, result))
         if not status == 200:
             logger.error(
-                'Non-200 response from OMDb: [{}] {}'.format(status, result))
+                u'Non-200 response from OMDb: [{}] {}'.format(status, result))
             return None
 
         try:
-            title_year = '{} ({})'.format(result["Title"], result["Year"])
+            title_year = u'{} ({})'.format(result["Title"], result["Year"])
         except Exception as e:
             logger.error('Failed to determine title and year: {}'.format(e))
             return None
