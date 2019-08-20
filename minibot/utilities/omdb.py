@@ -41,7 +41,7 @@ class OMDb(object):
             headers={'Content-Type': 'application/json'}
         )
 
-        return response.status_code, json.loads(response.text)
+        return response.status_code, json.loads(response.text, encoding='utf-8')
 
     def guid_search(self, imdb_guid=None):
         '''OMDb.guid_search() is deprecated.
