@@ -130,6 +130,8 @@ def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
 def run_server(debug=False):
     app = Flask(__name__)
     _db = dbutils.FileTransferDB()
+    logger.debug('db exists?: {} | {}'.format(
+        os.path.exists(_db.db_path), _db.db_path))
     q = TransferQueue(_db)
 
     @app.route(_NEW_MOVIE_ENDPOINT, methods=['POST'])
@@ -142,6 +144,9 @@ def run_server(debug=False):
 
         if r_code == 200:
             try:
+                if debug:
+                    logger.debug('Inserting into db: {} / {} \n{}'.format(
+                        r['guid'], r['path'], r))
                 _db.insert(guid=r['guid'], remote_path=r['path'])
             except sqlite3.IntegrityError as e:
                 if 'UNIQUE constraint failed' in e.message:
@@ -149,6 +154,9 @@ def run_server(debug=False):
                                    'database: {}'.format(r['guid']))
                     r_code = 208
                     r['status'] = 'Item already requested'
+            except Exception as e:
+                logger.error('Exception in db insert time: \n{}\n\n'.format(e))
+                raise
 
         else:
             logger.warning('{} - {}'.format(r_code, r['status']))
@@ -156,6 +164,7 @@ def run_server(debug=False):
         return r['status'], r_code
 
     try:
+        logger.debug('starting queue')
         q.start()
         if debug:
             app.run(port=5000, debug=True)
