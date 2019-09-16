@@ -260,9 +260,10 @@ class PlexSyncer(object):
             return None
 
         try:
-            title_year = u'{} ({})'.format(result["Title"], result["Year"])
+            title_year = u'{} ({})'.format(result[u'Title'], result[u'Year'])
+            logger.debug(u' * title_year: {}'.format(title_year))  # ToDo: Remove debug log
         except Exception as e:
-            logger.error('Failed to determine title and year: {}'.format(e))
+            logger.error(u'Failed to determine title and year: {}'.format(e))
             return None
 
         return title_year
