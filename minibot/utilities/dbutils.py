@@ -1,5 +1,6 @@
 #!/usr/bin/python -u
 # encoding: utf-8
+
 import os.path
 import sqlite3 as sql
 
@@ -34,6 +35,7 @@ class FileTransferDB(object):
             add_movie_sql = 'INSERT INTO {} (guid, remote_path) ' \
                             'VALUES (?, ?)'.format(self.table_name)
             con.row_factory = sql.Row
+            con.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
             cur = con.cursor()
             cur.execute(add_movie_sql, (guid, remote_path))
             con.commit()
@@ -43,6 +45,7 @@ class FileTransferDB(object):
             self.table_name, query)
         with sql.connect(self.db_path) as con:
             con.row_factory = sql.Row
+            con.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
             cur = con.cursor()
             cur.execute(query_sql)
 
@@ -53,6 +56,7 @@ class FileTransferDB(object):
             self.table_name)
         with sql.connect(self.db_path) as con:
             con.row_factory = sql.Row
+            con.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
             cur = con.cursor()
             cur.execute(guid_query, (guid,))
             result = cur.fetchone()
@@ -63,6 +67,7 @@ class FileTransferDB(object):
         query_sql = 'SELECT * FROM {}'.format(self.table_name)
         with sql.connect(self.db_path) as con:
             con.row_factory = sql.Row
+            con.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
             cur = con.cursor()
             cur.execute(query_sql)
             rows = cur.fetchall()

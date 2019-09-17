@@ -236,11 +236,10 @@ def send_new_movie_slack_notification(args):
         debug=args.debug,
         auth_type=config.PLEX_AUTH_TYPE
     )
+    logger.debug(movie_json)
 
     channel = config.DEFAULT_SLACK_ROOM
-
     if args.debug or args.dryrun:
-        logger.debug(movie_json)
         channel = config.DEBUG_SLACK_ROOM
 
     logger.info('Sending to slack_announce')
