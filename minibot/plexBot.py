@@ -24,6 +24,9 @@ def parse_arguments():
                         required=False, action='store_true',
                         help='Run flask server listening at endpoint for new '
                              'movies to sync.')
+    parser.add_argument('--pathonly', dest='pathonly',
+                        required=False, action='store_true',
+                        help='Allow path-only sync request.')
     args = parser.parse_args()
 
     return args, parser
@@ -44,6 +47,17 @@ def main():
         from utilities import server
         server.post_new_movie_to_syncer(
                 path=args.path, imdb_guid=args.imdb_guid)
+
+    elif args.path:
+        '''Best-effort attempt to parse the title and year from the filepath string to 
+        retrieve the IMDb guid from OMDb.'''
+        if args.pathonly:
+            logger.info('Sending path only sync request')
+            from utilities import server
+            server.post_new_movie_to_syncer(path=args.path)
+        else:
+            logger.info(
+                'Sync request failed. IMDb guid required: {}'.format(args.path))
 
     elif args.imdb_guid:
         logger.info('Sending new movie notification')
