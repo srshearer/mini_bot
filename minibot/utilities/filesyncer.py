@@ -356,7 +356,8 @@ class TransferQueue(utils.StoppableThread):
                     self._worker()
 
         except KeyboardInterrupt:
-            logger.debug('Exiting queue: KeyboardInterrupt')
+            logger.debug('Stopping queue: KeyboardInterrupt')
+            self.stop()
             pass
 
         except Exception as e:
@@ -368,10 +369,12 @@ class TransferQueue(utils.StoppableThread):
             notify_slack(message=e, title=t)
             notify_slack(message=msg, title=t)
 
+            logger.debug('Stopping queue')
             self.stop()
             raise PlexException(e)
 
         finally:
+            logger.debug('Cleaning up...')
             self._cleanup()
             logger.debug('Exiting queue: clean')
             return
