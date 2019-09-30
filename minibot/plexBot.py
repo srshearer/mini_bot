@@ -43,7 +43,9 @@ def main():
     elif args.path and args.imdb_guid:
         '''Requiring imdb_guid for now until I can disambiguate movies vs 
         other media, e.g. music, tv shows, etc...'''
-        logger.info('Sending sync request')
+        logger.info('Sending sync request: {} - {}'.format(
+            args.imdb_guid, args.path
+        ))
         from utilities import server
         server.post_new_movie_to_syncer(
                 path=args.path, imdb_guid=args.imdb_guid)
@@ -52,7 +54,7 @@ def main():
         '''Best-effort attempt to parse the title and year from the filepath string to 
         retrieve the IMDb guid from OMDb.'''
         if args.pathonly:
-            logger.info('Sending path only sync request')
+            logger.info('Sending path only sync request: {}'.format(args.path))
             from utilities import server
             server.post_new_movie_to_syncer(path=args.path)
         else:
@@ -60,7 +62,7 @@ def main():
                 'Sync request failed. IMDb guid required: {}'.format(args.path))
 
     elif args.imdb_guid:
-        logger.info('Sending new movie notification')
+        logger.info('Sending new movie notification: {}'.format(args.imdb_guid))
         from utilities import plexutils
         plexutils.send_new_movie_slack_notification(args)
 
