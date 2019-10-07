@@ -292,7 +292,8 @@ class PlexSyncer(object):
                     self.title_year, file_path)
             notify_slack(message, title=t, debug=self.debug)
         else:
-            success = True
+            success = False
+
             logger.info('Movie already in library: [{}] {}\n{}'.format(
                 self.imdb_guid, self.title_year, self.remote_path))
 
