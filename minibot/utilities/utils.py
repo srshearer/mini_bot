@@ -146,3 +146,16 @@ def retry(attempts=3, exception_to_check=Exception,
         return func_retry
 
     return decorator
+
+
+class SigInt(Exception):
+    pass
+
+
+def interrupt_handler(sig, frame):
+    msg = 'Received signal: {} \nline: {} in {}'.format(
+        str(sig),
+        str(frame.f_lineno),
+        frame.f_code.co_filename
+    )
+    raise SigInt(msg)

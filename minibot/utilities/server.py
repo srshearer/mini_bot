@@ -12,6 +12,7 @@ from utilities import dbutils
 from utilities import omdb
 from utilities import plexutils
 from utilities.utils import retry
+from utilities.utils import SigInt
 from utilities.filesyncer import TransferQueue
 
 
@@ -171,8 +172,11 @@ def run_server(debug=False):
         else:
             app.run(host='0.0.0.0', port=5000)
 
+    except SigInt:
+        logger.info('Exiting...\t(SigInt)')
+
     except KeyboardInterrupt:
-        logger.info('Exiting...')
+        logger.info('Exiting...\t(Keyboard interrupt)')
 
     except Exception as e:
         logger.error('Unknown exception: \n{}'.format(e))

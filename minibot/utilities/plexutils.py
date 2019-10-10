@@ -2,6 +2,7 @@
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
 import re
+import os.path
 from utilities import logger
 from utilities import config
 from utilities import omdb
@@ -331,13 +332,12 @@ def get_title_year_from_path(movie_path):
         IN: /mnt/movies/D/Defending Your Life (1991).mp4
         OUT: title:'Defending Your Life' 	year:'1991'
     """
-    movie_path = str(movie_path.strip())
-    m = movie_path.split('/')[-1]
+    m = os.path.basename(movie_path)
     title = None
     year = None
 
-    title_year_pattern = '([\w|\ |-|\.|-]+)\((\d{4})\).+'
-    title_pattern_no_year = '([\w|\ |-|-]+)\.'
+    title_year_pattern = u'([\w|\ |-|\.|-]+)\(?(\d{4})\)?.+'
+    title_pattern_no_year = u'([\w|\ |-|-]+)\.'
 
     try:
         result = re.search(title_year_pattern, m)
