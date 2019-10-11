@@ -153,9 +153,5 @@ class SigInt(Exception):
 
 
 def interrupt_handler(sig, frame):
-    msg = 'Received signal: {} \nline: {} in {}'.format(
-        str(sig),
-        str(frame.f_lineno),
-        frame.f_code.co_filename
-    )
+    msg = 'Received signal: {}'.format(str(sig))
     raise SigInt(msg)

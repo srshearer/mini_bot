@@ -8,3 +8,4 @@ logfile = os.path.abspath(
 logger = Logger(file_path=logfile, stdout=True)
 
 signal.signal(signal.SIGINT, utils.interrupt_handler)
+signal.signal(signal.SIGTERM, utils.interrupt_handler)

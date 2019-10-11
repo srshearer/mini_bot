@@ -172,11 +172,9 @@ def run_server(debug=False):
         else:
             app.run(host='0.0.0.0', port=5000)
 
-    except SigInt:
-        logger.info('Exiting...\t(SigInt)')
-
-    except KeyboardInterrupt:
-        logger.info('Exiting...\t(Keyboard interrupt)')
+    except SigInt as e:
+        logger.debug(e)
+        logger.info('Exiting...')
 
     except Exception as e:
         logger.error('Unknown exception: \n{}'.format(e))
