@@ -332,28 +332,39 @@ def get_title_year_from_path(movie_path):
         IN: /mnt/movies/D/Defending Your Life (1991).mp4
         OUT: title:'Defending Your Life' 	year:'1991'
     """
-    m = os.path.basename(movie_path)
-    title = None
-    year = None
 
-    title_year_pattern = u'([\w|\ |-|\.|-]+)\(?(\d{4})\)?.+'
-    title_pattern_no_year = u'([\w|\ |-|-]+)\.'
+    year_pattern = u'\(?(\d{4})\)?'
+    title_pattern = u'([\w|\ |-|-|!|\$]+)\(?[\w|.+]?'
+
+    title_space_chars = ['.', '_']
+    title_chars_blacklist = ['\'', '\"']
+
+    # Remove file path and extension
+    filename = os.path.basename(movie_path)
+    filename = os.path.splitext(filename)[0]
+
+    # Remove quotes and replace stand-in spaces from filename
+    for char in title_space_chars:
+        filename = filename.replace(char, ' ')
+    for char in title_chars_blacklist:
+        filename = filename.replace(char, '')
+    filename = filename.replace('  ', ' ')
+
+    year = None
+    title = None
 
     try:
-        result = re.search(title_year_pattern, m)
-
-        if result:
-            title, year = result.groups()
-            title = title.strip()
+        # Extract year without parentheses
+        year_result = re.search(year_pattern, filename)
+        if year_result:
+            year = year_result.groups()[-1]
             year = year.strip()
 
-        else:
-            title_result = re.search(title_pattern_no_year, m)
-            title = title_result.groups()[0]
+        # Extract title without year
+        title_result = re.search(title_pattern, filename)
+        if title_result:
+            title = title_result.groups()[-1]
             title = title.strip()
-            year = None
-
-        title = title.replace('.', ' ')
 
     except ValueError as e:
         print(e)
