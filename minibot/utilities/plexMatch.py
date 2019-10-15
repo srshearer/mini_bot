@@ -10,7 +10,6 @@ from utilities import config
 from utilities import plexutils
 from plexapi.server import PlexServer
 
-movie_list_file = os.path.expanduser('~/Desktop/movielist.txt')
 movies_file_cbs = os.path.abspath('movies_cbs.pickle')
 movies_file_srs = os.path.abspath('movies_srs.pickle')
 processed_movies_file = os.path.abspath('processed_movies.pickle')
