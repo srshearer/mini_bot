@@ -9,3 +9,4 @@ secrets.py
 build
 *.log
 *.db
+*.pickle
