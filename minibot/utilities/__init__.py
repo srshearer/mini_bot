@@ -1,3 +1,4 @@
+#!/usr/bin/python3 -u
 import os.path
 import signal
 from utilities import config

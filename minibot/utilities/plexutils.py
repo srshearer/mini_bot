@@ -1,6 +1,5 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 # encoding: utf-8
-from __future__ import print_function, unicode_literals, absolute_import
 import re
 import os.path
 from utilities import logger
@@ -312,8 +311,8 @@ def get_clean_imdb_guid(guid):
     Returns:
         - str(IMDb guid)
     """
-    url_pattern = '[.+\.]?imdb.com/title/([A-Za-z]{2}[\d]{5,8})(/?.+?|$)'
-    plex_pattern = '.+://([A-Za-z]{2}[\d]{5,8})\?.+'
+    url_pattern = r'[.+\.]?imdb.com/title/([A-Za-z]{2}[\d]{5,8})(/?.+?|$)'
+    plex_pattern = r'.+://([A-Za-z]{2}[\d]{5,8})\?.+'
 
     result = re.search(url_pattern, guid)
     if not result:
@@ -333,8 +332,8 @@ def get_title_year_from_path(movie_path):
         OUT: title:'Defending Your Life' 	year:'1991'
     """
 
-    year_pattern = u'\(?(\d{4})\)?'
-    title_pattern = u'([\w|\ |-|-|!|\$]+)\(?[\w|.+]?'
+    year_pattern = r'\(?(\d{4})\)?'
+    title_pattern = r'([\w|\ |-|-|!|\$]+)\(?[\w|.+]?'
 
     title_space_chars = ['.', '_']
     title_chars_blacklist = ['\'', '\"']

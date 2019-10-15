@@ -1,10 +1,9 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 # encoding: utf-8
-from __future__ import print_function, unicode_literals, absolute_import
 import os
 import time
 import pysftp
-from Queue import Queue
+from queue import Queue
 from utilities import utils
 from utilities import config
 from utilities import logger
@@ -149,7 +148,8 @@ class FileSyncer(object):
                     logger.debug('File permissions before: {}'.format(
                         file_mode_before))
 
-                    os.chmod(self.final_file_path, 0775)
+                    os.chmod(self.final_file_path,
+                             config.SYNCED_FILE_PERMISSIONS)
 
                     file_stat_after = os.stat(self.final_file_path)
                     file_mode_after = file_stat_after.st_mode
@@ -308,7 +308,7 @@ class TransferQueue(utils.StoppableThread):
 
     def _worker(self):
         while not self.queue.empty():
-            logger.info('Queued items: {}'.format(self.queue.unfinished_tasks))
+            logger.info('Queued items: {}'.format(self.queue.qsize()))
             q_guid = self.queue.get()
             logger.info('Starting download: {}'.format(q_guid))
             queued_movie = self.db.row_to_dict(self.db.select_guid(q_guid))

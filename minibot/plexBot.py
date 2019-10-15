@@ -1,6 +1,5 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 # encoding: utf-8
-from __future__ import print_function, unicode_literals, absolute_import
 import argparse
 from utilities import logger
 
@@ -51,8 +50,8 @@ def main():
                 path=args.path, imdb_guid=args.imdb_guid)
 
     elif args.path:
-        '''Best-effort attempt to parse the title and year from the filepath string to 
-        retrieve the IMDb guid from OMDb.'''
+        '''Best-effort attempt to parse the title and year from the filepath 
+        string to retrieve the IMDb guid from OMDb.'''
         if args.pathonly:
             logger.info('Sending path only sync request: {}'.format(args.path))
             from utilities import server
