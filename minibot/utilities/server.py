@@ -165,7 +165,7 @@ def run_server(run_queue=True, debug=False):
         return r['status'], r_code
 
     try:
-        if not run_queue:
+        if run_queue:
             logger.debug('starting queue')
             q.start()
 

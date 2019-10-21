@@ -44,6 +44,7 @@ def main():
         run_queue = True
         if args.no_transfer:
             run_queue = False
+
         server.run_server(run_queue=run_queue, debug=args.debug)
 
     elif args.path and args.imdb_guid:
