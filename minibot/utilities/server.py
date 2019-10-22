@@ -185,3 +185,4 @@ def run_server(run_queue=True, debug=False):
     finally:
         logger.info('Stopping server and transfer queue')
         q.stop()
+        logger.info('Server and transfer queue stopped')

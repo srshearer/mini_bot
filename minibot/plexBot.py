@@ -46,6 +46,7 @@ def main():
             run_queue = False
 
         server.run_server(run_queue=run_queue, debug=args.debug)
+        logger.info('Exited')
 
     elif args.path and args.imdb_guid:
         '''Requiring imdb_guid for now until I can disambiguate movies vs 
