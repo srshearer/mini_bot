@@ -128,7 +128,7 @@ def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
 
 
 @retry(delay=3, logger=logger)
-def run_server(debug=False):
+def run_server(run_queue=True, debug=False):
     app = Flask(__name__)
     _db = dbutils.FileTransferDB()
     logger.debug('db exists?: {} | {}'.format(
@@ -165,8 +165,11 @@ def run_server(debug=False):
         return r['status'], r_code
 
     try:
-        logger.debug('starting queue')
-        q.start()
+        if run_queue:
+            logger.debug('starting queue')
+            q.start()
+
+        logger.debug('starting listener')
         if debug:
             app.run(port=5000, debug=True)
         else:
@@ -182,3 +185,4 @@ def run_server(debug=False):
     finally:
         logger.info('Stopping server and transfer queue')
         q.stop()
+        logger.info('Server and transfer queue stopped')

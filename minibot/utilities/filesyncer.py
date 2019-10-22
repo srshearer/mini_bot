@@ -101,7 +101,7 @@ class FileSyncer(object):
 
         return self.transfer_successful, self.final_file_path
 
-    @utils.retry(attempts=3, delay=3, logger=logger)
+    @utils.retry(attempts=3, delay=10, logger=logger)
     def _transfer_file(self):
         self.transfer_successful = False
         try:
@@ -280,7 +280,15 @@ class PlexSyncer(object):
             syncer = FileSyncer(
                 remote_file=self.remote_path,
                 destination=self.movie_dir)
-            success, file_path = syncer.get_remote_file()
+
+            file_path = None
+            try:
+                success, file_path = syncer.get_remote_file()
+            except Exception:
+                logger.warning('Skipping item due to exception: {}'.format(
+                    self.imdb_guid
+                ))
+                success = False
 
             if not file_path or not success:
                 t = 'Transfer failed: {}'.format(self.title_year)
