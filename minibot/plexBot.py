@@ -24,6 +24,9 @@ def parse_arguments():
                         required=False, action='store_true',
                         help='Run flask server listening at endpoint for new '
                              'movies to sync.')
+    parser.add_argument('--notransfer', dest='no_transfer',
+                        required=False, action='store_true',
+                        help='Run server without starting transfer queue.')
     parser.add_argument('--pathonly', dest='pathonly',
                         required=False, action='store_true',
                         help='Allow path-only sync request.')
@@ -38,7 +41,11 @@ def main():
     if args.sync_server:
         logger.info('Starting server')
         from utilities import server
-        server.run_server(debug=args.debug)
+        run_queue = True
+        if args.no_transfer:
+            run_queue = False
+
+        server.run_server(run_queue=run_queue, debug=args.debug)
 
     elif args.path and args.imdb_guid:
         '''Requiring imdb_guid for now until I can disambiguate movies vs 
