@@ -94,12 +94,12 @@ class StoppableThread(threading.Thread):
 
 def conv_millisec_to_min(milliseconds):
     """Requires int(milliseconds) and converts it to minutes.
-    Returns: string(duration) (i.e. 117 min)
+    Returns: int(minutes)
     """
     s, remainder = divmod(milliseconds, 1000)
     m, s = divmod(s, 60)
-    minute_string = '{} min'.format(m)
-    return minute_string
+
+    return m
 
 
 def convert_file_size(size_bytes):

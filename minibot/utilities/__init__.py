@@ -2,6 +2,7 @@
 import os.path
 import signal
 from utilities import config
+from utilities import utils
 from utilities.utils import Logger
 
 logfile = os.path.abspath(
