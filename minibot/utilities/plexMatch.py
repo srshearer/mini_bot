@@ -7,6 +7,7 @@ import time
 import sys
 from requests.exceptions import ConnectTimeout
 from utilities import config
+from utilities import server
 from utilities import plexutils
 from plexapi.server import PlexServer
 
@@ -82,8 +83,7 @@ def sync(unique):
             if titleyear and guid and filepath:
                 print('\tSending sync request: {} [{}] - [{}]'.format(
                     titleyear, guid, filepath))
-                from utilities import server
-                # server.post_new_movie_to_syncer(path=filepath, imdb_guid=guid)
+                server.post_new_movie_to_syncer(path=filepath, imdb_guid=guid)
                 time.sleep(2)
             else:
                 print(' * ERROR: missing data: {}'.format(u))
