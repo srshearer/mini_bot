@@ -16,6 +16,7 @@ setuptools.setup(
         'flask',
         'pysftp',
         'slackannounce',
+        'mod-wsgi-standalone',
     ],
     license='MIT',
     long_description=long_description,

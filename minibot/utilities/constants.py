@@ -13,3 +13,4 @@ YEAR_TOKEN = 'y'
 PLOT_TOKEN = 'plot'
 PLOT_SHORT = 'short'
 PLOT_LONG = 'long'
+

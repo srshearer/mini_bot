@@ -32,6 +32,9 @@ REMOTE_USER = ''   # <user for remote server>
 IN_PROGRESS_DIR = '~/Downloads/'   # <path for in progress downloads>
 FILE_TRANSFER_COMPLETE_DIR = '~/Downloads/'   # <final destination path for downloads>
 
+NEW_MOVIE_ENDPOINT = '/new_movie/'
+
+SYNCED_FILE_PERMISSIONS = 0o775
 
 ## Slack Config ##
 

@@ -4,15 +4,22 @@ from __future__ import print_function, unicode_literals, absolute_import
 import os
 import time
 import pysftp
+import signal
 from Queue import Queue
-from utilities import utils
 from utilities import config
+from utilities import db
 from utilities import logger
 from utilities import omdb
 from utilities import plexutils
+from utilities import utils
 from utilities.utils import retry
+from utilities.utils import SigInt
 from utilities.plexutils import PlexException
 from utilities.slackutils import SlackSender
+
+
+signal.signal(signal.SIGINT, utils.interrupt_handler)
+signal.signal(signal.SIGTERM, utils.interrupt_handler)
 
 
 def notify_slack(message, title=None, channel='me', debug=False):
@@ -308,11 +315,10 @@ class PlexSyncer(object):
         return success
 
 
-class TransferQueue(utils.StoppableThread):
-    def __init__(self, db, *args, **kwargs):
-        super(TransferQueue, self).__init__(*args, **kwargs)
+class TransferQueue(object):
+    def __init__(self, database, *args, **kwargs):
         self.queue = Queue()
-        self.db = db
+        self.db = database
 
     def _worker(self):
         while not self.queue.empty():
@@ -353,7 +359,7 @@ class TransferQueue(utils.StoppableThread):
         """
         unqueued_item = None
         try:
-            while not self.stopped():
+            while True:
                 unqueued = self.db.select_all_unqueued_movies()
                 for unqueued_item in unqueued:
                     u = self.db.row_to_dict(unqueued_item)
@@ -364,10 +370,9 @@ class TransferQueue(utils.StoppableThread):
                 else:
                     self._worker()
 
-        except KeyboardInterrupt:
-            logger.debug('Stopping queue: KeyboardInterrupt')
-            self.stop()
-            pass
+        except SigInt as e:
+            logger.debug(e)
+            logger.debug('Exiting queue: SigInt')
 
         except Exception as e:
             t = 'Transfer exception: {}'.format(unqueued_item)
@@ -378,8 +383,7 @@ class TransferQueue(utils.StoppableThread):
             notify_slack(message=e, title=t)
             notify_slack(message=msg, title=t)
 
-            logger.debug('Stopping queue')
-            self.stop()
+            logger.debug('Exiting queue: Unknown Exception')
             raise PlexException(e)
 
         finally:
@@ -396,3 +400,14 @@ class TransferQueue(utils.StoppableThread):
             logger.debug('Setting incomplete: guid: {}: row: {}'.format(
                 i['guid'], i))
             self.db.mark_unqueued_incomplete(i['guid'])
+
+
+@retry(delay=3, logger=logger)
+def run_file_syncer():
+    logger.debug('db exists?: {} | {}'.format(
+        os.path.exists(db.db_path), db.db_path))
+    q = TransferQueue(db)
+
+    logger.debug('Starting queue')
+    q.run()
+    logger.info('Transfer queue stopped')
