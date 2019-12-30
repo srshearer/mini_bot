@@ -14,6 +14,16 @@ from utilities import plexutils
 app = Flask(__name__)
 
 
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
+
+
+@app.route('/test')
+def test():
+    return 'Test successful'
+
+
 def handle_movie_sync_request(raw_request, debug=False):
     request_data = {
         'title': None,
