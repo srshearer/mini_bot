@@ -1,14 +1,16 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
-import re
+
 import os.path
-from utilities import logger
-from utilities import config
-from utilities import omdb
-from utilities import utils
+import re
+
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
+from utilities import config
+from utilities import logger
+from utilities import omdb
+from utilities import utils
 from utilities.slackutils import SlackSender, text_color
 
 

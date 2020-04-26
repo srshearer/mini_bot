@@ -1,18 +1,20 @@
 #!/usr/bin/python -u
 # encoding: utf-8
 from __future__ import print_function, unicode_literals, absolute_import
+
 import os
 import time
-import pysftp
 from Queue import Queue
-from utilities import utils
+
+import pysftp
 from utilities import config
 from utilities import logger
 from utilities import omdb
 from utilities import plexutils
-from utilities.utils import retry
+from utilities import utils
 from utilities.plexutils import PlexException
 from utilities.slackutils import SlackSender
+from utilities.utils import retry
 
 
 def notify_slack(message, title=None, channel='me', debug=False):
