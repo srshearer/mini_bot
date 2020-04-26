@@ -1,6 +1,9 @@
-#!/usr/bin/python3 -u
+#!/usr/bin/python -u
 # encoding: utf-8
+from __future__ import print_function, unicode_literals, absolute_import
+
 import json
+
 import requests
 from utilities import constants
 
@@ -44,15 +47,15 @@ class OMDb(object):
                                                 encoding='unicode')
 
     def guid_search(self, imdb_guid=None):
-        """OMDb.guid_search() is deprecated.
-        Please use OMDb.search() """
+        '''OMDb.guid_search() is deprecated.
+        Please use OMDb.search() '''
         print('WARNING: OMDb.guid_search() is deprecated! '
               'Please use OMDb.search()')
         return self.search(imdb_guid=imdb_guid)
 
     def title_search(self, title=None, year=None):
-        """OMDb.title_search() is deprecated.
-        Please use OMDb.search()"""
+        '''OMDb.title_search() is deprecated.
+        Please use OMDb.search()'''
         print('WARNING: OMDb.title_search() is deprecated! '
               'Please use OMDb.search()')
         return self.search(title=title, year=year)

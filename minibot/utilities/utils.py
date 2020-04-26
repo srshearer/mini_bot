@@ -1,10 +1,10 @@
 #!/usr/bin/python3 -u
 # encoding: utf-8
-import math
-import time
-import os.path
 import functools
+import math
+import os.path
 import threading
+import time
 
 
 class Logger(object):

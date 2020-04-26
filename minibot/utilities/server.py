@@ -1,19 +1,21 @@
-#!/usr/bin/python3 -u
+#!/usr/bin/python -u
 # encoding: utf-8
-import os.path
+from __future__ import print_function, unicode_literals, absolute_import
+
 import json
-import requests
+import os.path
 import sqlite3
+
+import requests
 from flask import Flask, request
 from utilities import config
-from utilities import logger
 from utilities import dbutils
+from utilities import logger
 from utilities import omdb
 from utilities import plexutils
-from utilities.utils import retry
-from utilities.utils import SigInt
 from utilities.filesyncer import TransferQueue
-
+from utilities.utils import SigInt
+from utilities.utils import retry
 
 _NEW_MOVIE_ENDPOINT = '/new_movie/'
 

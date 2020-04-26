@@ -1,13 +1,16 @@
-#!/usr/bin/python3 -u
+#!/usr/bin/python -u
 # encoding: utf-8
-import re
+from __future__ import print_function, unicode_literals, absolute_import
+
 import os.path
-from utilities import logger
-from utilities import config
-from utilities import omdb
-from utilities import utils
+import re
+
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
+from utilities import config
+from utilities import logger
+from utilities import omdb
+from utilities import utils
 from utilities.slackutils import SlackSender, text_color
 
 
@@ -311,8 +314,8 @@ def get_clean_imdb_guid(guid):
     Returns:
         - str(IMDb guid)
     """
-    url_pattern = r'[.+\.]?imdb.com/title/([A-Za-z]{2}[\d]{5,8})(/?.+?|$)'
-    plex_pattern = r'.+://([A-Za-z]{2}[\d]{5,8})\?.+'
+    url_pattern = '[.+\.]?imdb.com/title/([A-Za-z]{2}[\d]{5,8})(/?.+?|$)'
+    plex_pattern = '.+://([A-Za-z]{2}[\d]{5,8})\?.+'
 
     result = re.search(url_pattern, guid)
     if not result:
@@ -332,8 +335,8 @@ def get_title_year_from_path(movie_path):
         OUT: title:'Defending Your Life' 	year:'1991'
     """
 
-    year_pattern = r'\(?(\d{4})\)?'
-    title_pattern = r'([\w|\ |-|-|!|\$]+)\(?[\w|.+]?'
+    year_pattern = u'\(?(\d{4})\)?'
+    title_pattern = u'([\w|\ |-|-|!|\$]+)\(?[\w|.+]?'
 
     title_space_chars = ['.', '_']
     title_chars_blacklist = ['\'', '\"']

@@ -1,17 +1,20 @@
-#!/usr/bin/python3 -u
+#!/usr/bin/python -u
 # encoding: utf-8
+from __future__ import print_function, unicode_literals, absolute_import
+
 import os
 import time
+from Queue import Queue
+
 import pysftp
-from queue import Queue
-from utilities import utils
 from utilities import config
 from utilities import logger
 from utilities import omdb
 from utilities import plexutils
-from utilities.utils import retry
+from utilities import utils
 from utilities.plexutils import PlexException
 from utilities.slackutils import SlackSender
+from utilities.utils import retry
 
 
 def notify_slack(message, title=None, channel='me', debug=False):
@@ -148,8 +151,7 @@ class FileSyncer(object):
                     logger.debug('File permissions before: {}'.format(
                         file_mode_before))
 
-                    os.chmod(self.final_file_path,
-                             config.SYNCED_FILE_PERMISSIONS)
+                    os.chmod(self.final_file_path, 0775)
 
                     file_stat_after = os.stat(self.final_file_path)
                     file_mode_after = file_stat_after.st_mode
@@ -316,7 +318,7 @@ class TransferQueue(utils.StoppableThread):
 
     def _worker(self):
         while not self.queue.empty():
-            logger.info('Queued items: {}'.format(self.queue.qsize()))
+            logger.info('Queued items: {}'.format(self.queue.unfinished_tasks))
             q_guid = self.queue.get()
             logger.info('Starting download: {}'.format(q_guid))
             queued_movie = self.db.row_to_dict(self.db.select_guid(q_guid))
