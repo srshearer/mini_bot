@@ -1,5 +1,4 @@
 #!/usr/bin/python3 -u
-# encoding: utf-8
 import functools
 import math
 import os.path
@@ -17,19 +16,19 @@ class Logger(object):
         return self._file_path
 
     def critical(self, message, stdout=False):
-        self._log(message, 'CRITICAL', stdout)
+        self._log(message, "CRITICAL", stdout)
 
     def error(self, message, stdout=False):
-        self._log(message, 'ERROR', stdout)
+        self._log(message, "ERROR", stdout)
 
     def warning(self, message, stdout=False):
-        self._log(message, 'WARNING', stdout)
+        self._log(message, "WARNING", stdout)
 
     def info(self, message, stdout=False):
-        self._log(message, 'INFO', stdout)
+        self._log(message, "INFO", stdout)
 
     def debug(self, message, stdout=False):
-        self._log(message, 'DEBUG', stdout)
+        self._log(message, "DEBUG", stdout)
 
     def _log(self, message, log_type, stdout=False):
         log_line = self._log_formatter(message, log_type)
@@ -39,40 +38,38 @@ class Logger(object):
 
     @staticmethod
     def _log_formatter(message, msg_type):
-        ts = time.strftime('%Y-%m-%d %H:%M:%S')
-        log_line = '{} {}: {}\n'.format(
-            ts, msg_type, message, encoding='utf-8')
+        ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        log_line = f"{ts} {msg_type}: {message}\n"
 
         return log_line
 
     def _append_to_log(self, log_line):
-        with open(self._file_path, 'a') as log:
+        with open(self._file_path, "a") as log:
             log.write(log_line)
 
     @staticmethod
     def _create_log_file(file_path=None):
         if not file_path:
-            file_name = 'log{}log'.format(os.path.extsep)
-            dir_path = os.path.abspath('.')
+            file_name = f"log{os.path.extsep}log"
+            dir_path = os.path.abspath(".")
             file_path = os.path.join(dir_path, file_name)
         else:
             file_path = os.path.expanduser(file_path)
-            dir_path = os.path.dirname(file_path) or os.path.abspath('.')
+            dir_path = os.path.dirname(file_path) or os.path.abspath(".")
 
         if not os.path.isfile(file_path):
             if not os.path.exists(dir_path):
                 try:
                     os.makedirs(dir_path)
-                except IOError as e:
-                    raise IOError(
-                        'Path does not exist and could not be created: '
-                        '{} \n{}'.format(dir_path, e))
+                except OSError as e:
+                    raise OSError(
+                        f"Path does not exist and could not be created: "
+                        "{dir_path} \n{str(e)}")
             else:
                 try:
-                    open(file_path, 'a').close()
-                except IOError as e:
-                    raise IOError('Could not create file: '
-                                  '{} \n{}'.format(file_path, e))
+                    open(file_path, "a").close()
+                except OSError as e:
+                    raise OSError(f"Could not create file: {file_path} \n{str(e)}")
 
         return file_path
 
@@ -82,7 +79,7 @@ class StoppableThread(threading.Thread):
     regularly for the stopped() condition."""
 
     def __init__(self, *args, **kwargs):
-        super(StoppableThread, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._stop_event = threading.Event()
 
     def stop(self):
@@ -110,13 +107,13 @@ def convert_file_size(size_bytes):
         - string (i.e. 3.21 GB)
     """
     if size_bytes == 0:
-        return '0B'
-    size_name = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB')
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB")
     i = int(math.floor(math.log(size_bytes, 1024)))
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
 
-    return '{} {}'.format(s, size_name[i])
+    return f"{s} {size_name[i]}"
 
 
 def retry(attempts=3, exception_to_check=Exception,
@@ -132,8 +129,8 @@ def retry(attempts=3, exception_to_check=Exception,
                 try:
                     return func(*args, **kwargs)
                 except exception_to_check as e:
-                    message = 'Exception: {}, Retrying in {} seconds...'.format(
-                        str(e), this_delay)
+                    message = f"Exception: {str(e)}, " \
+                              f"Retrying in {this_delay} seconds..."
                     if logger:
                         logger.warning(message)
                     else:
@@ -153,5 +150,5 @@ class SigInt(Exception):
 
 
 def interrupt_handler(sig, frame):
-    msg = 'Received signal: {}'.format(str(sig))
+    msg = f"Received signal: {str(sig)}"
     raise SigInt(msg)
