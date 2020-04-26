@@ -1,12 +1,11 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 # encoding: utf-8
-from __future__ import print_function, unicode_literals, absolute_import
-
 import os
 import time
-from Queue import Queue
+from queue import Queue
 
 import pysftp
+
 from utilities import config
 from utilities import logger
 from utilities import omdb
@@ -151,7 +150,7 @@ class FileSyncer(object):
                     logger.debug('File permissions before: {}'.format(
                         file_mode_before))
 
-                    os.chmod(self.final_file_path, 0775)
+                    os.chmod(self.final_file_path, 0o775)
 
                     file_stat_after = os.stat(self.final_file_path)
                     file_mode_after = file_stat_after.st_mode
@@ -168,10 +167,6 @@ class FileSyncer(object):
             self.final_file_path = None
 
         return self.final_file_path
-
-    def _remove_file(self):
-        if os.path.exists(os.path.join(self._tmp_dir, self.filename)):
-            os.remove(os.path.join(self._tmp_dir, self.filename))
 
     def _transfer_progress(self, complete, total, step=1):
         """

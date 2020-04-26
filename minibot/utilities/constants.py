@@ -1,5 +1,3 @@
-#!/usr/bin/python3 -u
-# encoding: utf-8
 
 OMDB_URL = 'http://www.omdbapi.com'
 

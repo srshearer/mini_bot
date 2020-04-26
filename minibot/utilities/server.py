@@ -1,13 +1,12 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 # encoding: utf-8
-from __future__ import print_function, unicode_literals, absolute_import
-
 import json
 import os.path
 import sqlite3
 
 import requests
 from flask import Flask, request
+
 from utilities import config
 from utilities import dbutils
 from utilities import logger
