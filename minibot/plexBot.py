@@ -2,7 +2,7 @@
 # encoding: utf-8
 import argparse
 
-from .utilities import logger
+from utilities import logger
 
 
 def parse_arguments():
@@ -48,7 +48,7 @@ def main():
     if args.sync_server:
         _codepath = "server"
         logger.info("Starting server")
-        from .utilities import server
+        from utilities import server
         run_queue = True
         if args.no_transfer:
             run_queue = False
@@ -60,7 +60,7 @@ def main():
         to a remote media server to pull a file"""
         _codepath = "sync request"
         logger.info(f"Sending sync request: {args.imdb_guid} - {args.path}")
-        from .utilities import server
+        from utilities import server
         server.post_new_movie_to_syncer(
                 path=args.path, imdb_guid=args.imdb_guid)
 
@@ -70,7 +70,7 @@ def main():
         _codepath = "sync request (path only)"
         if args.pathonly:
             logger.info(f"Sending path only sync request: {args.path}")
-            from .utilities import server
+            from utilities import server
             server.post_new_movie_to_syncer(path=args.path)
         else:
             logger.info(
@@ -79,7 +79,7 @@ def main():
     elif args.imdb_guid:
         _codepath = "notification sender"
         logger.info(f"Sending new movie notification: {args.imdb_guid}")
-        from .utilities import plexutils
+        from utilities import plexutils
         plexutils.send_new_movie_slack_notification(args)
 
     else:
