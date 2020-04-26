@@ -112,7 +112,7 @@ def text_color(requested_color):
         'blue': colors['blue'],
     }
 
-    if requested_color.lower() in map(str.lower, text_color_dict):
+    if requested_color.lower() in list(map(str.lower, text_color_dict)):
         return_color = text_color_dict[requested_color]
     else:
         print('ERROR - Invalid color: {}'.format(requested_color))

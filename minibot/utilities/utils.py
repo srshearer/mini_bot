@@ -40,7 +40,7 @@ class Logger(object):
     @staticmethod
     def _log_formatter(message, msg_type):
         ts = time.strftime('%Y-%m-%d %H:%M:%S')
-        log_line = u'{} {}: {}\n'.format(
+        log_line = '{} {}: {}\n'.format(
             ts, msg_type, message, encoding='utf-8')
 
         return log_line

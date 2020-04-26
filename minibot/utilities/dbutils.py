@@ -122,4 +122,4 @@ class FileTransferDB(object):
 
     @staticmethod
     def row_to_dict(row):
-        return dict(zip(row.keys(), row))
+        return dict(list(zip(list(row.keys()), row)))
