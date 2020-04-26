@@ -23,6 +23,7 @@ class PlexSearch(object):
     Optional kwargs:
         - auth_type (user or token): choose authentication method
     """
+
     def __init__(self, debug=False, auth_type=config.PLEX_AUTH_TYPE,
                  server=config.PLEX_SERVER_URL, **kwargs):
         self.kwargs = kwargs
@@ -151,6 +152,7 @@ class MovieNotification(object):
     """Creates an object for searching a Plex server and OMDb for relevant info
     about a given movie and formatting a json notification for Slack.
     """
+
     def __init__(self, debug=False, **kwargs):
         self.debug = debug
         self.imdb_guid = None
@@ -313,8 +315,8 @@ def get_clean_imdb_guid(guid):
     Returns:
         - str(IMDb guid)
     """
-    url_pattern = '[.+\.]?imdb.com/title/([A-Za-z]{2}[\d]{5,8})(/?.+?|$)'
-    plex_pattern = '.+://([A-Za-z]{2}[\d]{5,8})\?.+'
+    url_pattern = r'[.+\.]?imdb.com/title/([A-Za-z]{2}[\d]{5,8})(/?.+?|$)'
+    plex_pattern = r'.+://([A-Za-z]{2}[\d]{5,8})\?.+'
 
     result = re.search(url_pattern, guid)
     if not result:
@@ -334,8 +336,8 @@ def get_title_year_from_path(movie_path):
         OUT: title:'Defending Your Life' 	year:'1991'
     """
 
-    year_pattern = u'\(?(\d{4})\)?'
-    title_pattern = u'([\w|\ |-|-|!|\$]+)\(?[\w|.+]?'
+    year_pattern = r'\(?(\d{4})\)?'
+    title_pattern = r'([\w|\ |-|-|!|\$]+)\(?[\w|.+]?'
 
     title_space_chars = ['.', '_']
     title_chars_blacklist = ['\'', '\"']

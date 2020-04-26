@@ -39,7 +39,7 @@ def main():
     args, parser = parse_arguments()
 
     if args.sync_server:
-        codepath = 'server'
+        _codepath = 'server'
         logger.info('Starting server')
         from utilities import server
         run_queue = True
@@ -49,9 +49,9 @@ def main():
         server.run_server(run_queue=run_queue, debug=args.debug)
 
     elif args.path and args.imdb_guid:
-        '''Requiring imdb_guid for now until I can disambiguate movies vs 
-        other media, e.g. music, tv shows, etc...'''
-        codepath = 'sync request'
+        '''Send a request with a local filepath and the imdb guid of a movie to 
+        a remote media server to pull a file'''
+        _codepath = 'sync request'
         logger.info('Sending sync request: {} - {}'.format(
             args.imdb_guid, args.path
         ))
@@ -62,7 +62,7 @@ def main():
     elif args.path:
         '''Best-effort attempt to parse the title and year from the filepath string to 
         retrieve the IMDb guid from OMDb.'''
-        codepath = 'sync request (path only)'
+        _codepath = 'sync request (path only)'
         if args.pathonly:
             logger.info('Sending path only sync request: {}'.format(args.path))
             from utilities import server
@@ -72,16 +72,16 @@ def main():
                 'Sync request failed. IMDb guid required: {}'.format(args.path))
 
     elif args.imdb_guid:
-        codepath = 'notification sender'
+        _codepath = 'notification sender'
         logger.info('Sending new movie notification: {}'.format(args.imdb_guid))
         from utilities import plexutils
         plexutils.send_new_movie_slack_notification(args)
 
     else:
-        codepath = 'help'
+        _codepath = 'help'
         parser.print_help()
 
-    logger.debug('Exit: {}'.format(codepath))
+    logger.debug('Exit: {}'.format(_codepath))
 
 
 if __name__ == '__main__':
