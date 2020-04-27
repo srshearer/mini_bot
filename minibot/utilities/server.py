@@ -3,19 +3,25 @@ import json
 import os.path
 import sqlite3
 
-import requests
 from flask import Flask, request
 
 from utilities import config
-from utilities import dbutils
+from utilities import db
 from utilities import logger
 from utilities import omdb
 from utilities import plexutils
-from utilities.filesyncer import TransferQueue
-from utilities.utils import SigInt
-from utilities.utils import retry
 
-_NEW_MOVIE_ENDPOINT = "/new_movie/"
+app = Flask(__name__)
+
+
+@app.route("/")
+def hello_world():
+    return "Hello, World!"
+
+
+@app.route("/test")
+def test():
+    return "Test successful"
 
 
 def handle_movie_sync_request(raw_request, debug=False):
@@ -40,8 +46,8 @@ def handle_movie_sync_request(raw_request, debug=False):
         omdb_status, result = _omdb.search(imdb_guid=imdb_guid)
     else:
         clean_path = os.path.basename(request_data['path'])
-        t, y = plexutils.get_title_year_from_path(
-            clean_path)
+
+        t, y = plexutils.get_title_year_from_path(clean_path)
         request_data['title'] = t
         request_data['year'] = y
         omdb_status, result = _omdb.search(
@@ -96,88 +102,32 @@ def handle_movie_sync_request(raw_request, debug=False):
     return 200, request_data
 
 
-def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
-    movie_info_dict = {
-        "path": path,
-        "guid": imdb_guid,
-    }
+@app.route(config.NEW_MOVIE_ENDPOINT, methods=['POST'])
+def sync_new_movie():
+    debug = False
+    raw_request = request.get_json()
+    logger.info(f"Request: {raw_request}", stdout=True)
 
-    movie_data = json.dumps(movie_info_dict)
+    r_code, r = handle_movie_sync_request(raw_request, debug=debug)
+    logger.debug(f"Result: {r_code} - {r}")
 
-    url = config.REMOTE_LISTENER + _NEW_MOVIE_ENDPOINT
-    logger.debug(f"Posting request to: {url} - {movie_data}")
+    if r_code == 200:
+        try:
+            if debug:
+                logger.debug(f"Inserting into db: "
+                             f"{r['guid']} / {r['path']} \n{r}")
+            db.insert(guid=r['guid'], remote_path=r['path'])
+        except sqlite3.IntegrityError as e:
+            if "UNIQUE constraint failed" in e.message:
+                logger.warning(f"Skipping request. Already in database: "
+                               f"{r['guid']}")
+                r_code = 208
+                r['status'] = "Item already requested"
+        except Exception as e:
+            logger.error(f"Exception in db insert time: \n{str(e)}\n\n")
+            raise
 
-    try:
-        r = requests.post(
-            url, movie_data,
-            headers={"Content-Type": "application/json"},
-            timeout=timeout
-        )
-        logger.info(f"Response: [{r.status_code}] {r.text}")
+    else:
+        logger.warning(f"{r_code} - {r['status']}")
 
-    except requests.exceptions.ConnectionError:
-        logger.error("Response: [404] Server not found")
-
-    except requests.exceptions.ReadTimeout:
-        logger.error(
-            f"[503] Request timed out. No response after {timeout} seconds")
-
-
-@retry(delay=3, logger=logger)
-def run_server(run_queue=True, debug=False):
-    app = Flask(__name__)
-    _db = dbutils.FileTransferDB()
-    logger.debug(f"db exists?: {os.path.exists(_db.db_path)} | {_db.db_path}")
-    q = TransferQueue(_db)
-
-    @app.route(_NEW_MOVIE_ENDPOINT, methods=['POST'])
-    def sync_new_movie():
-        raw_request = request.get_json()
-        logger.info(f"Request: {raw_request}", stdout=True)
-
-        r_code, r = handle_movie_sync_request(raw_request, debug=debug)
-        logger.debug(f"Result: {r_code} - {r}")
-
-        if r_code == 200:
-            try:
-                if debug:
-                    logger.debug(
-                        f"Inserting into db: {r['guid']} / {r['path']} \n{r}")
-                _db.insert(guid=r['guid'], remote_path=r['path'])
-            except sqlite3.IntegrityError as e:
-                if "UNIQUE constraint failed" in e.message:
-                    logger.warning(
-                        f"Skipping request. Already in database: {r['guid']}")
-                    r_code = 208
-                    r['status'] = "Item already requested"
-            except Exception as e:
-                logger.error(f"Exception in db insert time: \n{e}\n\n")
-                raise
-
-        else:
-            logger.warning(f"{r_code} - {r['status']}")
-
-        return r['status'], r_code
-
-    try:
-        if run_queue:
-            logger.debug("starting queue")
-            q.start()
-
-        logger.debug("starting listener")
-        if debug:
-            app.run(port=5000, debug=True)
-        else:
-            app.run(host="0.0.0.0", port=5000)
-
-    except SigInt as e:
-        logger.debug(e)
-        logger.info("Exiting...")
-
-    except Exception as e:
-        logger.error(f"Unknown exception: \n{e}")
-
-    finally:
-        logger.info("Stopping server and transfer queue")
-        q.stop()
-        logger.info("Server and transfer queue stopped")
+    return r['status'], r_code

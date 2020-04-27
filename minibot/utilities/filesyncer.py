@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import os
 import time
+import signal
 from queue import Queue
 
 import pysftp
 
 from utilities import config
+from utilities import db
 from utilities import logger
 from utilities import omdb
 from utilities import plexutils
@@ -13,6 +15,11 @@ from utilities import utils
 from utilities.plexutils import PlexException
 from utilities.slackutils import SlackSender
 from utilities.utils import retry
+from utilities.utils import SigInt
+
+
+signal.signal(signal.SIGINT, utils.interrupt_handler)
+signal.signal(signal.SIGTERM, utils.interrupt_handler)
 
 
 def notify_slack(message, title=None, channel="me", debug=False):
@@ -86,7 +93,7 @@ class FileSyncer(object):
             self._set_file_paths(self.remote_file)
             logger.info(f"Copying from remote server: "
                         f"{self.remote_user}@{self.remote_server}:"
-                        f"\'{self.remote_file}\'")
+                        f"\"{self.remote_file}\"")
             logger.debug(f"Temp destination: {self._tmp_dir}")
             try:
                 success = self._transfer_file()
@@ -148,7 +155,8 @@ class FileSyncer(object):
                     logger.debug(
                         f"File permissions before: {file_mode_before}")
 
-                    os.chmod(self.final_file_path, 0o775)
+                    os.chmod(
+                        self.final_file_path, config.SYNCED_FILE_PERMISSIONS)
 
                     file_stat_after = os.stat(self.final_file_path)
                     file_mode_after = file_stat_after.st_mode
@@ -218,7 +226,8 @@ class FileSyncer(object):
 
 
 class PlexSyncer(object):
-    def __init__(self, imdb_guid=None, remote_path=None, debug=False, **kwargs):
+    def __init__(self, imdb_guid=None, remote_path=None,
+                 debug=False, **kwargs):
         self.kwargs = kwargs
         self.debug = debug
         self.imdb_guid = imdb_guid
@@ -299,18 +308,17 @@ class PlexSyncer(object):
         return success
 
 
-class TransferQueue(utils.StoppableThread):
-    def __init__(self, db, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class TransferQueue(object):
+    def __init__(self, database, *args, **kwargs):
         self.queue = Queue()
-        self.db = db
+        self.db = database
 
     def _worker(self):
         while not self.queue.empty():
-            logger.info(f"Queued items: {self.queue.unfinished_tasks}")
+            logger.info("Queued items: {}".format(self.queue.unfinished_tasks))
             q_guid = self.queue.get()
             logger.info(f"Starting download: {q_guid}")
-            queued_movie = self.db.select_guid(q_guid)
+            queued_movie = self.db.row_to_dict(self.db.select_guid(q_guid))
             syncer = PlexSyncer(
                 imdb_guid=q_guid,
                 remote_path=queued_movie['remote_path']
@@ -342,11 +350,12 @@ class TransferQueue(utils.StoppableThread):
             for items. (defaults to 5 seconds)
         :return:
         """
-        u = None
+        unqueued_item = None
         try:
-            while not self.stopped():
+            while True:
                 unqueued = self.db.select_all_unqueued_movies()
-                for u in unqueued:
+                for unqueued_item in unqueued:
+                    u = self.db.row_to_dict(unqueued_item)
                     self.add_item(u['guid'])
 
                 if self.queue.empty():
@@ -354,21 +363,20 @@ class TransferQueue(utils.StoppableThread):
                 else:
                     self._worker()
 
-        except KeyboardInterrupt:
-            logger.debug("Stopping queue: KeyboardInterrupt")
-            self.stop()
-            pass
+        except SigInt as e:
+            logger.debug(e)
+            logger.debug("Exiting queue: SigInt")
 
         except Exception as e:
-            t = f"Transfer exception: {u}"
-            msg = f"Exiting queue: Exception! Failed item: {tuple(u)}"
+            t = f"Transfer exception: {unqueued_item}"
+            msg = f"Exiting queue: Exception! Failed item: " \
+                  f"{tuple(unqueued_item)}"
             logger.error(e)
             logger.warning(msg)
             notify_slack(message=e, title=t)
             notify_slack(message=msg, title=t)
 
-            logger.debug("Stopping queue")
-            self.stop()
+            logger.debug("Exiting queue: Unknown Exception")
             raise PlexException(e)
 
         finally:
@@ -380,6 +388,17 @@ class TransferQueue(utils.StoppableThread):
     def _cleanup(self):
         logger.debug("Cleaning up")
         incomplete_rows = self.db.select_all_queued_incomplete()
-        for i in incomplete_rows:
+        for incomplete_item in incomplete_rows:
+            i = self.db.row_to_dict(incomplete_item)
             logger.debug(f"Setting incomplete: guid: {i['guid']}: row: {i}")
             self.db.mark_unqueued_incomplete(i['guid'])
+
+
+@retry(delay=3, logger=logger)
+def run_file_syncer():
+    logger.debug(f"db exists?: {os.path.exists(db.db_path)} | {db.db_path}")
+    q = TransferQueue(db)
+
+    logger.debug("Starting queue")
+    q.run()
+    logger.info("Transfer queue stopped")

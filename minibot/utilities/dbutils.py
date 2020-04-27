@@ -121,7 +121,3 @@ class FileTransferDB(object):
         with sql.connect(self.db_path) as con:
             cur = con.cursor()
             cur.execute(statement, params)
-
-    @staticmethod
-    def row_to_dict(row):
-        return dict(list(zip(list(row.keys()), row)))

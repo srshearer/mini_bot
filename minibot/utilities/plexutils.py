@@ -282,7 +282,7 @@ def format_quality(raw_quality):
     1080p, 720p, 480p, SD
     """
     input_quality = str(raw_quality)
-    known_qualities = ['1080", "720", "480']
+    known_qualities = ['1080', '720', '480']
     if input_quality in known_qualities:
         quality = input_quality + "p"
     else:
@@ -340,8 +340,8 @@ def get_title_year_from_path(movie_path):
     year_pattern = r"\(?(\d{4})\)?"
     title_pattern = r"([\w|\ |-|-|!|\$]+)\(?[\w|.+]?"
 
-    title_space_chars = ['.", "_']
-    title_chars_blacklist = ['\"", "\"']
+    title_space_chars = ['.', '_']
+    title_chars_blacklist = ['\'', '\"']
 
     # Remove file path and extension
     filename = os.path.basename(movie_path)

@@ -64,12 +64,13 @@ class Logger(object):
                 except OSError as e:
                     raise OSError(
                         f"Path does not exist and could not be created: "
-                        "{dir_path} \n{str(e)}")
+                        f"{dir_path} \n{str(e)}")
             else:
                 try:
                     open(file_path, "a").close()
                 except OSError as e:
-                    raise OSError(f"Could not create file: {file_path} \n{str(e)}")
+                    raise OSError(
+                        f"Could not create file: {file_path} \n{str(e)}")
 
         return file_path
 
