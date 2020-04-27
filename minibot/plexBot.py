@@ -25,13 +25,9 @@ def parse_arguments():
         required=False, action="store",
         help="Path to file.")
     parser.add_argument(
-        "-s", "--server", dest="sync_server",
+        "-s", "--sync", dest="sync_queue",
         required=False, action="store_true",
-        help="Run flask server listening at endpoint for new movies to sync.")
-    parser.add_argument(
-        "--notransfer", dest="no_transfer",
-        required=False, action="store_true",
-        help="Run server without starting transfer queue.")
+        help="Start file sync transfer queue")
     parser.add_argument(
         "--pathonly", dest="pathonly",
         required=False, action="store_true",
@@ -44,23 +40,20 @@ def parse_arguments():
 def main():
     args, parser = parse_arguments()
 
-    if args.sync_server:
-        _codepath = "server"
-        logger.info("Starting server")
-        from utilities import server
-        run_queue = True
-        if args.no_transfer:
-            run_queue = False
+    if args.sync_queue:
+        _codepath = "syncer"
+        logger.info("Starting file syncer")
+        from utilities import filesyncer
 
-        server.run_server(run_queue=run_queue, debug=args.debug)
+        filesyncer.run_file_syncer()
 
     elif args.path and args.imdb_guid:
-        """Send a request with a local filepath and the imdb guid of a movie 
-        to a remote media server to pull a file"""
+        """Requiring imdb_guid for now until I can disambiguate movies vs 
+        other media, e.g. music, tv shows, etc..."""
         _codepath = "sync request"
         logger.info(f"Sending sync request: {args.imdb_guid} - {args.path}")
-        from utilities import server
-        server.post_new_movie_to_syncer(
+        from utilities import client
+        client.post_new_movie_to_syncer(
                 path=args.path, imdb_guid=args.imdb_guid)
 
     elif args.path:
@@ -69,8 +62,8 @@ def main():
         _codepath = "sync request (path only)"
         if args.pathonly:
             logger.info(f"Sending path only sync request: {args.path}")
-            from utilities import server
-            server.post_new_movie_to_syncer(path=args.path)
+            from utilities import client
+            client.post_new_movie_to_syncer(path=args.path)
         else:
             logger.info(
                 f"Sync request failed. IMDb guid required: {args.path}")
