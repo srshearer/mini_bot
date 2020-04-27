@@ -16,6 +16,8 @@ app = Flask(__name__)
 
 @app.route("/", methods=['GET'])
 def hello_world():
+    raw_request = request.get_json()
+    logger.info(f"hello_world: {raw_request}")
     msg = "Hello, World!"
     response = app.response_class(response=msg, status=200,
                                   mimetype='application/json')
@@ -24,6 +26,8 @@ def hello_world():
 
 @app.route(config.TEST_ENDPOINT, methods=['GET'])
 def test():
+    raw_request = request.get_json()
+    logger.info(f"test: {raw_request}")
     msg = "Test successful"
     response = app.response_class(response=msg, status=200,
                                   mimetype='application/json')
@@ -115,11 +119,11 @@ def sync_new_movie():
     logger.info(f"Request: {raw_request}", stdout=True)
 
     r, r_code = handle_movie_sync_request(raw_request, debug=debug)
-    logger.debug(f"Result: {r_code} - {r}")
+    logger.debug(f"Result: {r} - [{r_code}]")
 
-    data = {"status": "r"}
-    response = app.response_class(response=json.dumps(data), status=r_code,
-                                  mimetype='application/json')
+    # data = {"status": "r"}
+    # response = app.response_class(response=json.dumps(data), status=r_code,
+    #                               mimetype='application/json')
 
     if r_code == 200:
         try:
@@ -139,5 +143,9 @@ def sync_new_movie():
 
     else:
         logger.warning(f"{r_code} - {r['status']}")
+
+    data = {"status": "r"}
+    response = app.response_class(response=json.dumps(data), status=r_code,
+                                  mimetype='application/json')
 
     return response
