@@ -82,7 +82,7 @@ class SlackSender(object):
             self.webhook_url, data=json.dumps(self._json_payload),
             headers={"Content-Type": "application/json"}
         )
-        print(f"Result: [{response.status_code}] {response.text}")
+        print(f"Result: {response.text} [{response.status_code}]")
 
         return response
 
