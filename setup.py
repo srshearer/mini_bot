@@ -5,18 +5,16 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="minibot",
-    version="0.0.1",
+    version="0.1.0",
     author='Steven Shearer',
     author_email='srshearer@gmail.com',
-    description='Tools for sending notification messages as a Slack bot user',
+    description='Tools for managing a Plex server and file transfers',
     install_requires=[
         'PlexAPI',
         'requests',
         'argparse',
         'flask',
         'pysftp',
-        'slackannounce',
-        'mod-wsgi-standalone',
     ],
     license='MIT',
     long_description=long_description,
@@ -24,7 +22,7 @@ setuptools.setup(
     url="https://github.com/srshearer/minibot",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.7",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],

@@ -1,6 +1,4 @@
-#!/usr/bin/python -u
-# encoding: utf-8
-
+#!/usr/bin/env python3
 import os.path
 import sqlite3 as sql
 
@@ -26,48 +24,49 @@ class FileTransferDB(object):
 
     def _create_from_schema(self):
         connection = sql.connect(self.db_path)
+        connection.row_factory = sql.Row
         cur = connection.cursor()
         with open(self.schema_path) as schema:
             cur.executescript(schema.read())
 
     def insert(self, guid, remote_path):
+        statement = f"INSERT INTO {self.table_name} (guid, remote_path) " \
+                    f"VALUES (?, ?)"
+        params = (guid, remote_path)
         with sql.connect(self.db_path) as con:
-            add_movie_sql = 'INSERT INTO {} (guid, remote_path) ' \
-                            'VALUES (?, ?)'.format(self.table_name)
             con.row_factory = sql.Row
-            con.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
+            con.text_factory = lambda x: str(x, "utf-8", "ignore")
             cur = con.cursor()
-            cur.execute(add_movie_sql, (guid, remote_path))
+            cur.execute(statement, params)
             con.commit()
 
     def _select_movie(self, query):
-        query_sql = 'SELECT * FROM {} WHERE {}'.format(
-            self.table_name, query)
+        query_sql = f"SELECT * FROM {self.table_name} WHERE {query}"
         with sql.connect(self.db_path) as con:
             con.row_factory = sql.Row
-            con.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
+            con.text_factory = lambda x: str(x, "utf-8", "ignore")
             cur = con.cursor()
             cur.execute(query_sql)
 
             return cur
 
     def select_guid(self, guid):
-        guid_query = 'SELECT * FROM {} WHERE guid=?'.format(
-            self.table_name)
+        statement = f"SELECT * FROM {self.table_name} WHERE guid=?"
+        params = (guid,)
         with sql.connect(self.db_path) as con:
             con.row_factory = sql.Row
-            con.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
+            con.text_factory = lambda x: str(x, "utf-8", "ignore")
             cur = con.cursor()
-            cur.execute(guid_query, (guid,))
+            cur.execute(statement, params)
             result = cur.fetchone()
 
         return result
 
     def select_all_movies(self):
-        query_sql = 'SELECT * FROM {}'.format(self.table_name)
+        query_sql = f"SELECT * FROM {self.table_name}"
         with sql.connect(self.db_path) as con:
             con.row_factory = sql.Row
-            con.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
+            con.text_factory = lambda x: str(x, "utf-8", "ignore")
             cur = con.cursor()
             cur.execute(query_sql)
             rows = cur.fetchall()
@@ -75,52 +74,54 @@ class FileTransferDB(object):
         return rows
 
     def select_all_unqueued_movies(self):
-        unqueued_query = 'queued = 0 AND complete = 0'
+        unqueued_query = "queued = 0 AND complete = 0"
         cur = self._select_movie(unqueued_query)
         rows = cur.fetchall()
 
         return rows
 
     def select_all_queued_incomplete(self):
-        incomplete_query = 'queued = 1 AND complete = 0'
+        incomplete_query = "queued = 1 AND complete = 0"
         cur = self._select_movie(incomplete_query)
         rows = cur.fetchall()
 
         return rows
 
     def select_one_incomplete(self):
-        incomplete_query = 'queued = 1 AND complete = 0'
+        incomplete_query = "queued = 1 AND complete = 0"
         cur = self._select_movie(incomplete_query)
         result = cur.fetchone()
 
         return result
 
     def _update_status(self, guid, column, val):
-        update_sql = 'UPDATE {} SET {} = {} WHERE guid=?'.format(
-                    self.table_name, column, val)
+        statement = f"UPDATE {self.table_name} SET {column} = {val} " \
+                    f"WHERE guid=?"
+        params = (guid,)
         with sql.connect(self.db_path) as con:
             cur = con.cursor()
-            cur.execute(update_sql, (guid,))
+            cur.execute(statement, params)
             con.commit()
 
     def mark_queued(self, guid):
-        self._update_status(guid, 'queued', 1)
-        self._update_status(guid, 'complete', 0)
+        self._update_status(guid, "queued", 1)
+        self._update_status(guid, "complete", 0)
 
     def mark_complete(self, guid):
-        self._update_status(guid, 'queued', 0)
-        self._update_status(guid, 'complete', 1)
+        self._update_status(guid, "queued", 0)
+        self._update_status(guid, "complete", 1)
 
     def mark_unqueued_incomplete(self, guid):
-        self._update_status(guid, 'queued', 0)
-        self._update_status(guid, 'complete', 0)
+        self._update_status(guid, "queued", 0)
+        self._update_status(guid, "complete", 0)
 
     def remove_guid(self, guid):
+        statement = f"DELETE FROM {self.table_name} WHERE guid=?"
+        params = (guid,)
         with sql.connect(self.db_path) as con:
             cur = con.cursor()
-            cur.execute("DELETE FROM {} WHERE guid=?".format(
-                self.table_name), (guid,))
+            cur.execute(statement, params)
 
     @staticmethod
     def row_to_dict(row):
-        return dict(zip(row.keys(), row))
+        return dict(list(zip(list(row.keys()), row)))
