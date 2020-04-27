@@ -14,14 +14,14 @@ from utilities import plexutils
 app = Flask(__name__)
 
 
-@app.route("/")
+@app.route("/", methods=['GET'])
 def hello_world():
-    return "Hello, World!"
+    return 200, "Hello, World!"
 
 
-@app.route("/test")
+@app.route(config.TEST_ENDPOINT, methods=['GET'])
 def test():
-    return "Test successful"
+    return 200, "Test successful"
 
 
 def handle_movie_sync_request(raw_request, debug=False):

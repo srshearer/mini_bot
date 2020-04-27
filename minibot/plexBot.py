@@ -29,6 +29,10 @@ def parse_arguments():
         required=False, action="store_true",
         help="Start file sync transfer queue")
     parser.add_argument(
+        "--test", dest="test",
+        required=False, action="store_true",
+        help="Send and receive messages to test endpoints on the server")
+    parser.add_argument(
         "--pathonly", dest="pathonly",
         required=False, action="store_true",
         help="Allow path-only sync request.")
@@ -73,6 +77,12 @@ def main():
         logger.info(f"Sending new movie notification: {args.imdb_guid}")
         from utilities import plexutils
         plexutils.send_new_movie_slack_notification(args)
+
+    elif args.test:
+        _codepath = "endpoint test"
+        logger.info(f"Getting server test endpoint")
+        from utilities import client
+        client.get_test_endpoint()
 
     else:
         _codepath = "help"

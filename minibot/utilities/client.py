@@ -30,3 +30,23 @@ def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
     except requests.exceptions.ReadTimeout:
         logger.error(
             f"[503] Request timed out. No response after {timeout} seconds")
+
+
+def get_test_endpoint(timeout=10):
+    url = config.REMOTE_LISTENER + config.TEST_ENDPOINT
+    logger.debug(f"Sending get request to: {url}")
+
+    try:
+        r = requests.get(
+            url,
+            headers={"Content-Type": "application/json"},
+            timeout=timeout
+        )
+        logger.info(f"Response: [{r.status_code}] {r.text}")
+
+    except requests.exceptions.ConnectionError:
+        logger.error("Response: [404] Server not found")
+
+    except requests.exceptions.ReadTimeout:
+        logger.error(
+            f"[503] Request timed out. No response after {timeout} seconds")
