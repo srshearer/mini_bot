@@ -34,14 +34,10 @@ def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
 
 def get_test_endpoint(timeout=10):
     url = config.REMOTE_LISTENER + config.TEST_ENDPOINT
-    logger.debug(f"Sending get request to: {url}")
+    logger.debug(f"Sending GET request to: {url}")
 
     try:
-        r = requests.get(
-            url,
-            headers={"Content-Type": "application/json"},
-            timeout=timeout
-        )
+        r = requests.get(url, timeout=timeout)
         logger.info(f"Response: {r.text} [{r.status_code}]")
 
     except requests.exceptions.ConnectionError:
