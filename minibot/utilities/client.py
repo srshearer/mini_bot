@@ -22,14 +22,14 @@ def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
             headers={"Content-Type": "application/json"},
             timeout=timeout
         )
-        logger.info(f"Response: [{r.status_code}] {r.text}")
+        logger.info(f"Response: {r.text} [{r.status_code}]")
 
     except requests.exceptions.ConnectionError:
-        logger.error("Response: [404] Server not found")
+        logger.error("Response: Server not found [404]")
 
     except requests.exceptions.ReadTimeout:
         logger.error(
-            f"[503] Request timed out. No response after {timeout} seconds")
+            f" Request timed out. No response after {timeout} seconds [503]")
 
 
 def get_test_endpoint(timeout=10):
@@ -42,11 +42,11 @@ def get_test_endpoint(timeout=10):
             headers={"Content-Type": "application/json"},
             timeout=timeout
         )
-        logger.info(f"Response: [{r.status_code}] {r.text}")
+        logger.info(f"Response: {r.text} [{r.status_code}]")
 
     except requests.exceptions.ConnectionError:
         logger.error("Response: [404] Server not found")
 
     except requests.exceptions.ReadTimeout:
         logger.error(
-            f"[503] Request timed out. No response after {timeout} seconds")
+            f"Request timed out. No response after {timeout} seconds [503] ")
