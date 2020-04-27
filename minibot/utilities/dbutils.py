@@ -1,5 +1,4 @@
-#!/usr/bin/python3 -u
-# encoding: utf-8
+#!/usr/bin/env python3
 import os.path
 import sqlite3 as sql
 
