@@ -16,16 +16,16 @@ app = Flask(__name__)
 
 @app.route("/", methods=['GET'])
 def hello_world():
-    data = {"message": "Hello, World!"}
-    response = app.response_class(response=json.dumps(data), status=200,
+    msg = "Hello, World!"
+    response = app.response_class(response=msg, status=200,
                                   mimetype='application/json')
     return response
 
 
 @app.route(config.TEST_ENDPOINT, methods=['GET'])
 def test():
-    data = {"message": "Test successful"}
-    response = app.response_class(response=json.dumps(data), status=200,
+    msg = "Test successful"
+    response = app.response_class(response=msg, status=200,
                                   mimetype='application/json')
     return response
 
