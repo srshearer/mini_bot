@@ -13,6 +13,7 @@ def _send_post(url, data, timeout=60):
             timeout=timeout
         )
         logger.info(f"Response: {r.text} [{r.status_code}]")
+        return r
 
     except requests.exceptions.ConnectionError:
         logger.error("Response: Server not found [404]")
@@ -58,11 +59,14 @@ def post_test_endpoint(timeout=10):
     import uuid
     url = config.REMOTE_LISTENER + config.TEST_ENDPOINT
     data_dict = {
-        "uuid": uuid.uuid4(),
+        "uuid": str(uuid.uuid4()),
         "message": "Ping!",
     }
 
     data = json.dumps(data_dict)
     logger.debug(f"Sending POST request to: {url} - {data}")
 
-    _send_post(url, data, timeout=timeout)
+    r = _send_post(url, data, timeout=timeout)
+
+    print(f"response: {r}")
+    print(f"response.text: {r.text}")
