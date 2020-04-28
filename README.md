@@ -1,16 +1,6 @@
 # minibot
 Python tools for sending messages to Slack and interfacing with Plex. Created for my personal use.
 
-###### *Requirements:* 
-+ Python 3.7+
-+ PlexAPI
-+ Flask
-+ pysftp
-+ paramiko
-+ Slack webhook url
-+ Plex & Plex auth token
-+ OMDb api key
-+ 
 
 ### plexBot.py
 
@@ -70,6 +60,16 @@ Before this will work, you will need to do the following…
 ###### *Recommendations*
 - I would recommend that you install and use [Tautulli](https://tautulli.com) on your Plex Server. This will not only give you a great web interface and statistics for your server and content, but will also allow you to monitor your server for new content and launch plexBot.py. Alternatively, you could use Tautulli to entirely circumvent the need of this script and just send Slack notifications via their built-in tools.
 - Token based Plex authentication is set up by default but can be changed in config.py. User based authentication is much slower than token based auth. 
+
+###### *Requirements:* 
++ Python 3.7+
++ PlexAPI
++ Flask
++ pysftp
++ paramiko
++ Slack webhook url
++ Plex & Plex auth token
++ OMDb api key
 
 ###### *Links*
 + Plex: https://www.plex.tv
