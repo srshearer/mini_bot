@@ -25,13 +25,18 @@ def hello_world():
     return response
 
 
-@app.route(config.TEST_ENDPOINT, methods=['GET'])
+@app.route(config.TEST_ENDPOINT, methods=['GET', 'POST'])
 def test():
     raw_request = request.get_json()
-    logger.info(f"test: {raw_request}")
-    msg = "Test successful"
-    response = app.response_class(response=msg, status=200,
-                                  mimetype='application/json')
+
+    logger.info(f"test request: {raw_request}")
+    response_dict = {
+        "message": "Test successful",
+        "echo": f"{raw_request}"
+    }
+
+    response = app.response_class(response=json.dumps(response_dict),
+                                  status=200, mimetype='application/json')
     return response
 
 
