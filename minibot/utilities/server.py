@@ -32,8 +32,9 @@ def test():
     logger.info(f"test request: {raw_request}")
     response_dict = {
         "message": "Test successful",
-        "echo": f"{raw_request}"
     }
+    if raw_request:
+        response_dict["echo"] = raw_request
 
     response = app.response_class(response=json.dumps(response_dict),
                                   status=200, mimetype='application/json')

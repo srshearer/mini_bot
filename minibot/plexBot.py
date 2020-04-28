@@ -80,9 +80,11 @@ def main():
 
     elif args.test:
         _codepath = "endpoint test"
-        logger.info(f"Getting server test endpoint")
         from utilities import client
+        logger.info(f"Getting server test endpoint")
         client.get_test_endpoint()
+        logger.info(f"Posting to server test endpoint")
+        client.post_test_endpoint()
 
     else:
         _codepath = "help"
