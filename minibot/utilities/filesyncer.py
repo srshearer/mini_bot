@@ -253,12 +253,12 @@ class PlexSyncer(object):
         if not imdb_guid:
             imdb_guid = self.imdb_guid
 
-        result, status = self._omdb.search(imdb_guid=imdb_guid)
+        result, status_code = self._omdb.search(imdb_guid=imdb_guid)
 
-        logger.debug(f"Response from OMDb: [{status}] {result}")
-        if not status == 200:
+        logger.debug(f"Response from OMDb: [{status_code}] {result}")
+        if not status_code == 200:
             logger.error(
-                f"Non-200 response from OMDb: [{status}] {result}")
+                f"Non-200 response from OMDb: [{status_code}] {result}")
             return None
 
         try:

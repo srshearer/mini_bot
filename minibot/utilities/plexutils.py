@@ -172,7 +172,7 @@ class MovieNotification(object):
         """
         self.imdb_guid = imdb_guid
 
-        _, self._omdb_result = self._omdb.search(imdb_guid=imdb_guid)
+        self._omdb_result, _ = self._omdb.search(imdb_guid=imdb_guid)
 
         plex_results = self._plex_helper.movie_search(imdb_guid)
         if plex_results:

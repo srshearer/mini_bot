@@ -119,10 +119,10 @@ def sync_new_movie():
     raw_request = request.get_json()
     logger.info(f"Request: {raw_request}", stdout=True)
 
-    r, r_code = handle_movie_sync_request(raw_request, debug=debug)
-    logger.debug(f"Result: {r} - [{r_code}]")
+    r, status_code = handle_movie_sync_request(raw_request, debug=debug)
+    logger.debug(f"Result: {r} - [{status_code}]")
 
-    if r_code == 200:
+    if status_code == 200:
         try:
             if debug:
                 logger.debug(f"Inserting into db: "
@@ -132,17 +132,18 @@ def sync_new_movie():
             logger.error(e)
             logger.warning(f"Skipping request. Already in database: "
                            f"{r['guid']}")
-            r_code = 208
+            status_code = 208
             r['status'] = "Item already requested"
         except Exception as e:
             logger.error(f"Exception in db insert time: \n{str(e)}\n\n")
             raise
 
     else:
-        logger.warning(f"{r_code} - {r['status']}")
+        logger.warning(f"{status_code} - {r['status']}")
 
     data = {"status": f"{r}"}
-    response = app.response_class(response=json.dumps(data), status=r_code,
+    response = app.response_class(response=json.dumps(data),
+                                  status=status_code,
                                   mimetype='application/json')
 
     return response
