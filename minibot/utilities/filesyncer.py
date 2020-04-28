@@ -109,6 +109,7 @@ class FileSyncer(object):
 
     @utils.retry(attempts=3, delay=10, logger=logger)
     def _transfer_file(self):
+        logger.info("Starting file transfer...")
         self.transfer_successful = False
         try:
             self._in_progress_file = os.path.join(
