@@ -129,7 +129,7 @@ def sync_new_movie():
                              f"{r['guid']} / {r['path']} \n{r}")
             db.insert(guid=r['guid'], remote_path=r['path'])
         except sqlite3.IntegrityError as e:
-        # if "UNIQUE constraint failed" in str(e):
+            logger.error(e)
             logger.warning(f"Skipping request. Already in database: "
                            f"{r['guid']}")
             r_code = 208
