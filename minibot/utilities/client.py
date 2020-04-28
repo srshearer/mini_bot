@@ -58,8 +58,9 @@ def get_test_endpoint(timeout=10):
 def post_test_endpoint(timeout=10):
     import uuid
     url = config.REMOTE_LISTENER + config.TEST_ENDPOINT
+    _req_uuid = str(uuid.uuid4())
     data_dict = {
-        "uuid": str(uuid.uuid4()),
+        "uuid": _req_uuid,
         "message": "Ping!",
     }
 
@@ -67,6 +68,10 @@ def post_test_endpoint(timeout=10):
     logger.debug(f"Sending POST request to: {url} - {data}")
 
     r = _send_post(url, data, timeout=timeout)
-
-    print(f"response: {r}")
-    print(f"response.text: {r.text}")
+    response_data = json.loads(r.text)
+    _res_uuid = response_data["echo"]["uuid"]
+    if _res_uuid == _req_uuid:
+        logger.info("Success! Response matches request.")
+    else:
+        logger.error("Response does not match request")
+        logger.debug(f"request: {_req_uuid} / response: {_res_uuid}")
