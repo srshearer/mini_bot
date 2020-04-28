@@ -1,6 +1,17 @@
 # minibot
 Python tools for sending messages to Slack and interfacing with Plex. Created for my personal use.
 
+###### *Requirements:* 
++ Python 3.7+
++ PlexAPI
++ Flask
++ pysftp
++ paramiko
++ Slack webhook url
++ Plex & Plex auth token
++ OMDb api key
++ 
+
 ### plexBot.py
 
 This is the primary script to interact with the collection of utility functions. Either send rich movie notifications to Slack, or send and receive notifications to transfer files between two servers.
