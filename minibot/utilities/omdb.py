@@ -41,4 +41,5 @@ class OMDb(object):
             headers={"Content-Type": "application/json"}
         )
 
-        return json.loads(response.text, encoding="unicode"), response.status_code
+        return json.loads(
+            response.text, encoding="unicode"), response.status_code

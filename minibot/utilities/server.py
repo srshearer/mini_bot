@@ -141,7 +141,7 @@ def sync_new_movie():
     else:
         logger.warning(f"{r_code} - {r['status']}")
 
-    data = {"status": "r"}
+    data = {"status": f"{r}"}
     response = app.response_class(response=json.dumps(data), status=r_code,
                                   mimetype='application/json')
 
