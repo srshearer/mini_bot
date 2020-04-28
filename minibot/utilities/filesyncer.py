@@ -318,7 +318,7 @@ class TransferQueue(object):
             logger.info("Queued items: {}".format(self.queue.unfinished_tasks))
             q_guid = self.queue.get()
             logger.info(f"Starting download: {q_guid}")
-            queued_movie = self.db.row_to_dict(self.db.select_guid(q_guid))
+            queued_movie = self.db.select_guid(q_guid)
             syncer = PlexSyncer(
                 imdb_guid=q_guid,
                 remote_path=queued_movie['remote_path']
@@ -350,12 +350,11 @@ class TransferQueue(object):
             for items. (defaults to 5 seconds)
         :return:
         """
-        unqueued_item = None
+        u = None
         try:
             while True:
                 unqueued = self.db.select_all_unqueued_movies()
-                for unqueued_item in unqueued:
-                    u = self.db.row_to_dict(unqueued_item)
+                for u in unqueued:
                     self.add_item(u['guid'])
 
                 if self.queue.empty():
@@ -368,9 +367,9 @@ class TransferQueue(object):
             logger.debug("Exiting queue: SigInt")
 
         except Exception as e:
-            t = f"Transfer exception: {unqueued_item}"
+            t = f"Transfer exception: {u}"
             msg = f"Exiting queue: Exception! Failed item: " \
-                  f"{tuple(unqueued_item)}"
+                  f"{tuple(u)}"
             logger.error(e)
             logger.warning(msg)
             notify_slack(message=e, title=t)
@@ -388,8 +387,7 @@ class TransferQueue(object):
     def _cleanup(self):
         logger.debug("Cleaning up")
         incomplete_rows = self.db.select_all_queued_incomplete()
-        for incomplete_item in incomplete_rows:
-            i = self.db.row_to_dict(incomplete_item)
+        for i in incomplete_rows:
             logger.debug(f"Setting incomplete: guid: {i['guid']}: row: {i}")
             self.db.mark_unqueued_incomplete(i['guid'])
 

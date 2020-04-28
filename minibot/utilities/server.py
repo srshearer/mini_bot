@@ -3,7 +3,8 @@ import json
 import os.path
 import sqlite3
 
-from flask import Flask, request
+from flask import Flask
+from flask import request
 
 from utilities import config
 from utilities import db
@@ -121,10 +122,6 @@ def sync_new_movie():
     r, r_code = handle_movie_sync_request(raw_request, debug=debug)
     logger.debug(f"Result: {r} - [{r_code}]")
 
-    # data = {"status": "r"}
-    # response = app.response_class(response=json.dumps(data), status=r_code,
-    #                               mimetype='application/json')
-
     if r_code == 200:
         try:
             if debug:
@@ -132,11 +129,11 @@ def sync_new_movie():
                              f"{r['guid']} / {r['path']} \n{r}")
             db.insert(guid=r['guid'], remote_path=r['path'])
         except sqlite3.IntegrityError as e:
-            if "UNIQUE constraint failed" in e.message:
-                logger.warning(f"Skipping request. Already in database: "
-                               f"{r['guid']}")
-                r_code = 208
-                r['status'] = "Item already requested"
+        # if "UNIQUE constraint failed" in str(e):
+            logger.warning(f"Skipping request. Already in database: "
+                           f"{r['guid']}")
+            r_code = 208
+            r['status'] = "Item already requested"
         except Exception as e:
             logger.error(f"Exception in db insert time: \n{str(e)}\n\n")
             raise
