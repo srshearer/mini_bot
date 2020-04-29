@@ -1,38 +1,58 @@
-#!/usr/bin/python -u
-# encoding: utf-8
-from __future__ import print_function, unicode_literals, absolute_import
-
+#!/usr/bin/env python3
 import json
 import os.path
 import sqlite3
 
-import requests
-from flask import Flask, request
+from flask import Flask
+from flask import request
+
 from utilities import config
-from utilities import dbutils
+from utilities import db
 from utilities import logger
 from utilities import omdb
 from utilities import plexutils
-from utilities.filesyncer import TransferQueue
-from utilities.utils import SigInt
-from utilities.utils import retry
 
-_NEW_MOVIE_ENDPOINT = '/new_movie/'
+app = Flask(__name__)
+
+
+@app.route("/", methods=['GET'])
+def hello_world():
+    raw_request = request.get_json()
+    logger.info(f"hello_world: {raw_request}")
+    msg = "Hello, World!"
+    response = app.response_class(response=msg, status=200,
+                                  mimetype='application/json')
+    return response
+
+
+@app.route(config.TEST_ENDPOINT, methods=['GET', 'POST'])
+def test():
+    raw_request = request.get_json()
+
+    logger.info(f"test request: {raw_request}")
+    response_dict = {
+        "message": "Test successful",
+    }
+    if raw_request:
+        response_dict["echo"] = raw_request
+
+    response = app.response_class(response=json.dumps(response_dict),
+                                  status=200, mimetype='application/json')
+    return response
 
 
 def handle_movie_sync_request(raw_request, debug=False):
     request_data = {
-        'title': None,
-        'year': None,
-        'guid': None,
-        'path': None,
-        'status': None,
+        "title": None,
+        "year": None,
+        "guid": None,
+        "path": None,
+        "status": None,
     }
 
     if not raw_request['path']:
-        request_data['status'] = 'No remote path for file: {}'.format(
-            raw_request)
-        return 400, request_data
+        request_data['status'] = f"No remote path for file: {raw_request}"
+        return request_data, 400
     else:
         request_data['path'] = raw_request['path']
 
@@ -40,34 +60,35 @@ def handle_movie_sync_request(raw_request, debug=False):
 
     if raw_request['guid']:
         imdb_guid = raw_request['guid']
-        omdb_status, result = _omdb.search(imdb_guid=imdb_guid)
+        result, omdb_status = _omdb.search(imdb_guid=imdb_guid)
     else:
         clean_path = os.path.basename(request_data['path'])
-        request_data['title'], request_data['year'] = plexutils.get_title_year_from_path(
-            clean_path)
-        omdb_status, result = _omdb.search(
+
+        t, y = plexutils.get_title_year_from_path(clean_path)
+        request_data['title'] = t
+        request_data['year'] = y
+        result, omdb_status = _omdb.search(
             title=request_data['title'], year=request_data['year'])
 
     if not omdb_status == 200:
-        request_data['status'] = 'Error locating movie in OMDB: {}'.format(
-            raw_request)
-        return omdb_status, request_data
+        request_data['status'] = f"Error locating movie in OMDB: {raw_request}"
+        return request_data, omdb_status
 
     try:
         if not result['Type']:
-            request_data['status'] = 'Unable to determine content type: ' \
-                                     '{}'.format(raw_request)
-            return 415, request_data
+            request_data['status'] = f"Unable to determine content type: " \
+                                     f"{raw_request}"
+            return request_data, 415
 
-        if not result['Type'] == 'movie':
-            request_data['status'] = 'Content type is not movie: {} | {}'.format(
-                result['Type'], raw_request)
-            return 415, request_data
+        if not result['Type'] == "movie":
+            request_data['status'] = f"Content type is not movie: " \
+                                     f"{result['Type']} | {raw_request}"
+            return request_data, 415
 
     except TypeError:
-        request_data['status'] = 'Unable to determine content type: {}'.format(
-            raw_request)
-        return 415, request_data
+        request_data['status'] = f"Unable to determine content type: " \
+                                 f"{raw_request}"
+        return request_data, 415
 
     try:
         request_data['guid'] = result['imdbID']
@@ -75,115 +96,60 @@ def handle_movie_sync_request(raw_request, debug=False):
         request_data['year'] = result['Year']
 
     except KeyError as e:
-        request_data['status'] = 'Movie not found: {} | {}'.format(
-            raw_request, e)
-        return 404, request_data
+        request_data['status'] = f"Movie not found: {raw_request} | {str(e)}"
+        return request_data, 404
 
     except Exception as e:
-        request_data['status'] = 'Unknown exception: {} | {}'.format(
-            raw_request, e)
-        return 400, request_data
+        request_data['status'] = f"Unknown exception: {raw_request} | {str(e)}"
+        return request_data, 400
 
     if not request_data['title']:
-        request_data['status'] = 'Missing title: {}'.format(raw_request)
-        return 404, request_data
+        request_data['status'] = f"Missing title: {raw_request}"
+        return request_data, 404
 
     if not request_data['guid']:
-        request_data['status'] = 'Missing guid: {}'.format(raw_request)
-        return 404, request_data
+        request_data['status'] = f"Missing guid: {raw_request}"
+        return request_data, 404
 
     if not request_data['path']:
-        request_data['status'] = 'Missing path: {}'.format(raw_request)
-        return 400, request_data
+        request_data['status'] = f"Missing path: {raw_request}"
+        return request_data, 400
 
-    request_data['status'] = 'Success'
-    return 200, request_data
-
-
-def post_new_movie_to_syncer(path, imdb_guid=None, timeout=60):
-    movie_info_dict = {
-        'path': path,
-        'guid': imdb_guid,
-    }
-
-    movie_data = json.dumps(movie_info_dict)
-
-    url = config.REMOTE_LISTENER + _NEW_MOVIE_ENDPOINT
-    logger.debug('Posting request to: {} - {}'.format(url, movie_data))
-
-    try:
-        r = requests.post(
-            url, movie_data,
-            headers={'Content-Type': 'application/json'},
-            timeout=timeout
-        )
-        logger.info('Response: [{}] {}'.format(r.status_code, r.text))
-
-    except requests.exceptions.ConnectionError:
-        logger.error('Response: [404] Server not found')
-
-    except requests.exceptions.ReadTimeout:
-        logger.error(
-            '[503] Request timed out. No response after {} seconds'.format(
-                timeout))
+    request_data['status'] = "Success"
+    return request_data, 200
 
 
-@retry(delay=3, logger=logger)
-def run_server(run_queue=True, debug=False):
-    app = Flask(__name__)
-    _db = dbutils.FileTransferDB()
-    logger.debug('db exists?: {} | {}'.format(
-        os.path.exists(_db.db_path), _db.db_path))
-    q = TransferQueue(_db)
+@app.route(config.NEW_MOVIE_ENDPOINT, methods=['POST'])
+def sync_new_movie():
+    debug = False
+    raw_request = request.get_json()
+    logger.info(f"Request: {raw_request}", stdout=True)
 
-    @app.route(_NEW_MOVIE_ENDPOINT, methods=['POST'])
-    def sync_new_movie():
-        raw_request = request.get_json()
-        logger.info('Request: {}'.format(raw_request), stdout=True)
+    r, status_code = handle_movie_sync_request(raw_request, debug=debug)
+    logger.debug(f"Result: {r} - [{status_code}]")
 
-        r_code, r = handle_movie_sync_request(raw_request, debug=debug)
-        logger.debug('Result: {} - {}'.format(r_code, r))
+    if status_code == 200:
+        try:
+            if debug:
+                logger.debug(f"Inserting into db: "
+                             f"{r['guid']} / {r['path']} \n{r}")
+            db.insert(guid=r['guid'], remote_path=r['path'])
+        except sqlite3.IntegrityError as e:
+            logger.error(e)
+            logger.warning(f"Skipping request. Already in database: "
+                           f"{r['guid']}")
+            status_code = 208
+            r['status'] = "Item already requested"
+        except Exception as e:
+            logger.error(f"Exception in db insert time: \n{str(e)}\n\n")
+            raise
 
-        if r_code == 200:
-            try:
-                if debug:
-                    logger.debug('Inserting into db: {} / {} \n{}'.format(
-                        r['guid'], r['path'], r))
-                _db.insert(guid=r['guid'], remote_path=r['path'])
-            except sqlite3.IntegrityError as e:
-                if 'UNIQUE constraint failed' in e.message:
-                    logger.warning('Skipping request. Already in '
-                                   'database: {}'.format(r['guid']))
-                    r_code = 208
-                    r['status'] = 'Item already requested'
-            except Exception as e:
-                logger.error('Exception in db insert time: \n{}\n\n'.format(e))
-                raise
+    else:
+        logger.warning(f"{status_code} - {r['status']}")
 
-        else:
-            logger.warning('{} - {}'.format(r_code, r['status']))
+    data = {"status": f"{r}"}
+    response = app.response_class(response=json.dumps(data),
+                                  status=status_code,
+                                  mimetype='application/json')
 
-        return r['status'], r_code
-
-    try:
-        if run_queue:
-            logger.debug('starting queue')
-            q.start()
-
-        logger.debug('starting listener')
-        if debug:
-            app.run(port=5000, debug=True)
-        else:
-            app.run(host='0.0.0.0', port=5000)
-
-    except SigInt as e:
-        logger.debug(e)
-        logger.info('Exiting...')
-
-    except Exception as e:
-        logger.error('Unknown exception: \n{}'.format(e))
-
-    finally:
-        logger.info('Stopping server and transfer queue')
-        q.stop()
-        logger.info('Server and transfer queue stopped')
+    return response

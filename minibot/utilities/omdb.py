@@ -1,10 +1,8 @@
-#!/usr/bin/python -u
-# encoding: utf-8
-from __future__ import print_function, unicode_literals, absolute_import
-
+#!/usr/bin/env python3
 import json
 
 import requests
+
 from utilities import constants
 
 
@@ -23,7 +21,7 @@ class OMDb(object):
 
     def search(self, imdb_guid=None, title=None, year=None):
         if self.debug:
-            print('Searching OMDb... guid: [{}] title: [{}] year: [{}]'.format(
+            print("Searching OMDb... guid: [{}] title: [{}] year: [{}]".format(
                 imdb_guid, title, year))
 
         query_dict = {
@@ -35,27 +33,13 @@ class OMDb(object):
         }
 
         if self.debug:
-            print('url: {}'.format(constants.OMDB_URL))
-            print('query: {}'.format(query_dict))
+            print(f"url: {constants.OMDB_URL}")
+            print(f"query: {query_dict}")
 
         response = requests.get(
             constants.OMDB_URL, params=query_dict,
-            headers={'Content-Type': 'application/json'}
+            headers={"Content-Type": "application/json"}
         )
 
-        return response.status_code, json.loads(response.text,
-                                                encoding='unicode')
-
-    def guid_search(self, imdb_guid=None):
-        '''OMDb.guid_search() is deprecated.
-        Please use OMDb.search() '''
-        print('WARNING: OMDb.guid_search() is deprecated! '
-              'Please use OMDb.search()')
-        return self.search(imdb_guid=imdb_guid)
-
-    def title_search(self, title=None, year=None):
-        '''OMDb.title_search() is deprecated.
-        Please use OMDb.search()'''
-        print('WARNING: OMDb.title_search() is deprecated! '
-              'Please use OMDb.search()')
-        return self.search(title=title, year=year)
+        return json.loads(
+            response.text, encoding="unicode"), response.status_code

@@ -1,6 +1,3 @@
-#!/usr/bin/python -u
-# encoding: utf-8
-from __future__ import unicode_literals, absolute_import
 
 OMDB_URL = 'http://www.omdbapi.com'
 
