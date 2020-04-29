@@ -328,7 +328,7 @@ class TransferQueue(object):
             queued_movie = self.db.select_guid(q_guid)
             syncer = PlexSyncer(
                 imdb_guid=q_guid,
-                remote_path=queued_movie['remote_path']
+                remote_path=queued_movie[db.rempath_col]
             )
             successful = syncer.run_sync_flow()
             if successful:
@@ -362,7 +362,7 @@ class TransferQueue(object):
             while True:
                 unqueued = self.db.select_all_unqueued_movies()
                 for u in unqueued:
-                    self.add_item(u['guid'])
+                    self.add_item(u[db.guid_col])
 
                 if self.queue.empty():
                     time.sleep(update_frequency)
@@ -395,8 +395,9 @@ class TransferQueue(object):
         logger.debug("Cleaning up")
         incomplete_rows = self.db.select_all_queued_incomplete()
         for i in incomplete_rows:
-            logger.debug(f"Setting incomplete: guid: {i['guid']}: row: {i}")
-            self.db.mark_unqueued_incomplete(i['guid'])
+            logger.debug(
+                f"Setting incomplete: guid: {i[db.guid_col]}: row: {i}")
+            self.db.mark_unqueued_incomplete(i[db.guid_col])
 
 
 @retry(delay=3, logger=logger)
