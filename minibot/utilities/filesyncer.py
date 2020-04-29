@@ -200,10 +200,11 @@ class FileSyncer(object):
             rate = utils.convert_file_size(total / duration)
             logger.info(f"Transfer completed in "
                         f"{round(duration, 2)} seconds [{rate}/s]")
+            self._seen_progress.append(pct)
             return
 
         # log each N percentage exactly once where in is step
-        if pct in range(100)[0::step]:
+        if pct in range(101)[0::step]:
             rate = utils.convert_file_size(self._transfer_rate(complete))
             logger.info(f"Transfer Progress: "
                         f"{self.filename}\t{pct}%  \t[ {c} / {t} ]\t{rate}/s")
