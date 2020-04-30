@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import math
 import time
 import signal
 from queue import Queue
@@ -103,7 +104,6 @@ class FileSyncer(object):
 
             if success:
                 self._move_file_to_destination()
-                print(f"Transfer successful: {self.transfer_successful}")
 
         return self.transfer_successful, self.final_file_path
 
@@ -184,7 +184,7 @@ class FileSyncer(object):
         log every 5 percent of file completion: 0%, 5%, 10% … 100%
         :return:
         """
-        pct = round(100 * complete / total)
+        pct = math.floor(100 * complete / total)
         c = utils.convert_file_size(complete)
         t = utils.convert_file_size(total)
 
@@ -192,7 +192,7 @@ class FileSyncer(object):
             return
 
         # transfer complete
-        if complete == total:
+        if pct == 100:
             self._transfer_end_time = time.time()
             self.transfer_successful = True
             duration = abs(
