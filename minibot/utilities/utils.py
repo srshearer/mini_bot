@@ -153,3 +153,7 @@ class SigInt(Exception):
 def interrupt_handler(sig, frame):
     msg = f"Received signal: {str(sig)}"
     raise SigInt(msg)
+
+
+def calculate_resolution(height=0, width=0):
+    return int(height * width)

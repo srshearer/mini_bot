@@ -277,9 +277,35 @@ class PlexSyncer(object):
 
         return title_year
 
+    def is_higher_quality(self):
+        movie_local = self.plex_local.movie_search(guid=self.imdb_guid)
+        height = movie_local.media[0].height
+        width = movie_local.media[0].width
+        resolution_local = utils.calculate_resolution(
+            height=height, width=width)
+
+        movie_remote = self.plex_local.movie_search(guid=self.imdb_guid)
+        height = movie_remote.media[0].height
+        width = movie_remote.media[0].width
+        resolution_remote = utils.calculate_resolution(
+            height=height, width=width)
+
+        return resolution_remote > resolution_local
+
+    def should_transfer(self):
+        if not self.plex_local.in_plex_library(guid=self.imdb_guid):
+            return True
+        elif self.is_higher_quality():
+            ok_to_transfer = True
+        else:
+            ok_to_transfer = False
+
+        return ok_to_transfer
+
     def run_sync_flow(self):
         self.connect_plex()
         self.title_year = self.get_title_year()
+
         if not self.plex_local.in_plex_library(guid=self.imdb_guid):
             message = f"Movie not in library: [{self.imdb_guid}] " \
                       f"{self.title_year} - {self.remote_path}"
